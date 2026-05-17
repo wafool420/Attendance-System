@@ -18,8 +18,9 @@
 <div class="card p-4 mb-4">
   {% if not event %}
   <h4>Event Attendance QR</h4>
-  <form method="POST" action="{% url 'create_event' %}">
+  <form id="eventForm" method="POST" action="{% url 'create_event' %}">
     {% csrf_token %}
+
     <input
       type="text"
       name="title"
@@ -28,11 +29,34 @@
       required
     />
 
+    <input
+      type="text"
+      name="venue"
+      class="form-control mb-2"
+      placeholder="Enter venue"
+      required
+    />
+
+    <input
+      type="date"
+      name="event_date"
+      id="eventDate"
+      class="form-control mb-3"
+      required
+    />
+
     <button type="submit" class="btn btn-success">Create Event</button>
   </form>
   {% endif %} {% if event %} {% if event %}
   <div class="d-flex align-items-center gap-2 mt-3 mb-3">
     <p class="mb-0"><strong>Current Event:</strong> {{ event.title }}</p>
+
+    <div class="text-muted small">
+      {{ event.venue }} • {{ event.event_date|date:"M d, Y" }}
+    </div>
+    <p class="text-muted mb-1">
+      Started: {{ event.created_at|date:"M d, Y h:i A" }}
+    </p>
 
     <form
       method="POST"
@@ -51,6 +75,24 @@
       >
         Close Event
       </button>
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        onclick="openEditEvent(
+    '{{ event.id }}',
+    '{{ event.title|escapejs }}',
+    '{{ event.venue|escapejs }}',
+    '{{ event.event_date|date:'Y-m-d' }}'
+  )"
+      >
+        Edit Event
+      </button>
+      <a
+        href="{% url 'export_attendance_excel' event.id %}"
+        class="btn btn-success btn-sm"
+      >
+        Download Excel
+      </a>
     </form>
   </div>
   {% endif %}
@@ -135,7 +177,7 @@
         <tbody id="attendanceTable">
           {% for entry in entries|slice:":6" %}
           <tr>
-            <td class="name">{{ entry.name }}</td>
+            <td class="name">{{ entry.name|upper }}</td>
             <td>{{ entry.campus }}</td>
             <td>{{ entry.check_in|date:"h:i A"|default:"---" }}</td>
             <td>{{ entry.check_out|date:"h:i A"|default:"---" }}</td>
@@ -267,6 +309,43 @@
 
 {% endif %}
 
+<div id="editEventModal" class="edit-event-viewer">
+  <div class="edit-event-box">
+    <button class="close-edit-event" onclick="closeEditEvent()">×</button>
+
+    <h4 class="fw-bold mb-3">Edit Event</h4>
+
+    <form id="editEventForm" method="POST">
+      {% csrf_token %}
+
+      <input
+        type="text"
+        name="title"
+        id="editTitle"
+        class="form-control mb-2"
+        required
+      />
+
+      <input
+        type="text"
+        name="venue"
+        id="editVenue"
+        class="form-control mb-2"
+        required
+      />
+
+      <input
+        type="date"
+        name="event_date"
+        id="editEventDate"
+        class="form-control mb-3"
+        required
+      />
+
+      <button type="submit" class="btn btn-success">Save Changes</button>
+    </form>
+  </div>
+</div>
 <style>
   .image-viewer {
     display: none;
@@ -352,11 +431,66 @@
     background: none;
     cursor: pointer;
   }
+
+  .edit-event-viewer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+  }
+
+  .edit-event-box {
+    background: white;
+    width: 420px;
+    max-width: 95%;
+    border-radius: 12px;
+    padding: 25px;
+    position: relative;
+  }
+
+  .close-edit-event {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    font-size: 30px;
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
 </style>
 
 <script>
   let images = [];
   let currentIndex = 0;
+
+  function openEditEvent(eventId, title, venue, eventDate) {
+    document.getElementById("editTitle").value = title;
+    document.getElementById("editVenue").value = venue;
+    document.getElementById("editEventDate").value = eventDate;
+
+    document.getElementById("editEventForm").action = `/edit-event/${eventId}/`;
+
+    document.getElementById("editEventModal").style.display = "flex";
+  }
+
+  function closeEditEvent() {
+    document.getElementById("editEventModal").style.display = "none";
+  }
+
+  document.getElementById("eventForm").addEventListener("submit", function (e) {
+    const selectedDate = document.getElementById("eventDate").value;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    if (selectedDate < today) {
+      e.preventDefault();
+      alert("Invalid event date.");
+    }
+  });
 
   document.getElementById("searchInput").addEventListener("keyup", function () {
     let filter = this.value.toLowerCase();

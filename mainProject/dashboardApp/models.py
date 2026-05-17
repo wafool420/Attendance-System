@@ -18,6 +18,9 @@ class Profile(models.Model):
 
 class Event(models.Model):
     title = models.CharField(max_length=150)
+    venue = models.CharField(max_length=255)
+    event_date = models.DateField()
+
     date = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

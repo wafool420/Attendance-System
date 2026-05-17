@@ -1,238 +1,50 @@
 {% extends 'app/base.html' %} {% block content %}
-<div class="container-fluid">
-  <h3 class="mb-4">Attendance Log</h3>
-
-  {% for event in events %}
-  <div class="card mb-4 shadow-sm">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-          <h5 class="card-title mb-1">{{ event.title }}</h5>
-          <p class="text-muted mb-0">
-            Closed: {{ event.closed_at|date:"M d, Y h:i A" }}
-          </p>
-        </div>
-
-        <div class="d-flex gap-2">
-          <form method="POST" action="{% url 'reopen_event' event.id %}">
-            {% csrf_token %}
-            <button
-              type="submit"
-              class="btn btn-success btn-sm"
-              onclick="
-                return confirm(
-                  'Are you sure you want to reopen this event? It will return to Today’s Attendance.',
-                );
-              "
-            >
-              Reopen Event
-            </button>
-          </form>
-
-          <form method="POST" action="{% url 'delete_event' event.id %}">
-            {% csrf_token %}
-            <button
-              type="submit"
-              class="btn btn-danger btn-sm"
-              onclick="
-                return confirm(
-                  '⚠️ Are you sure you want to permanently delete this event? This will also delete all attendance records under it.',
-                );
-              "
-            >
-              ⚠ Permanently Delete
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <table class="table table-bordered align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>Name</th>
-            <th>Campus</th>
-            <th>Sex</th>
-            <th>Check In</th>
-            <th>Check Out</th>
-            <th>Status</th>
-            <th>Photo</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {% for entry in event.entries.all|slice:":6" %}
-          <tr>
-            <td>{{ entry.name }}</td>
-            <td>{{ entry.campus }}</td>
-            <td>{{ entry.get_sex_display }}</td>
-            <td>{{ entry.check_in|date:"h:i A"|default:"—" }}</td>
-            <td>{{ entry.check_out|date:"h:i A"|default:"—" }}</td>
-
-            <td>
-              {% if entry.check_in and entry.check_out %}
-              <span class="text-success fw-bold">✔ Present</span>
-              {% elif entry.check_in and not entry.check_out %}
-              <span class="text-danger fw-bold">✖ Absent</span>
-              {% else %}
-              <span class="text-secondary">Not Scanned</span>
-              {% endif %}
-            </td>
-
-            <td>
-              {% if entry.check_in_image or entry.check_out_image %}
-              <button
-                type="button"
-                class="btn btn-sm btn-info"
-                onclick="openImageViewer(
-                  '{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}',
-                  '{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}'
-                )"
-              >
-                View
-              </button>
-              {% else %} — {% endif %}
-            </td>
-          </tr>
-
-          {% empty %}
-          <tr>
-            <td colspan="7" class="text-center text-muted">
-              No attendance records for this event.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      {% if event.entries.all|length > 6 %}
-      <div class="text-end mt-2">
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm"
-          onclick="openFullList('fullList{{ event.id }}')"
-        >
-          Show Full List
-        </button>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div id="fullList{{ event.id }}" class="full-list-viewer">
-    <div class="full-list-box">
-      <button
-        class="close-full-list"
-        onclick="closeFullList('fullList{{ event.id }}')"
-      >
-        ×
-      </button>
-
-      <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-          <h4 class="fw-bold mb-1">{{ event.title }}</h4>
-          <p class="text-muted mb-0">
-            Closed: {{ event.closed_at|date:"M d, Y h:i A" }}
-          </p>
-        </div>
-
-        <input
-          type="text"
-          class="form-control w-25 full-list-search"
-          placeholder="Search entries..."
-          onkeyup="filterFullList(this, 'fullListTable{{ event.id }}')"
-        />
-      </div>
-
-      <div class="table-responsive">
-        <table class="table table-bordered align-middle">
-          <thead class="table-light">
-            <tr>
-              <th>Name</th>
-              <th>Campus</th>
-              <th>Sex</th>
-              <th>Check In</th>
-              <th>Check Out</th>
-              <th>Status</th>
-              <th>Photo</th>
-            </tr>
-          </thead>
-
-          <tbody id="fullListTable{{ event.id }}">
-            {% for entry in event.entries.all %}
-            <tr>
-              <td class="entry-name">{{ entry.name }}</td>
-              <td>{{ entry.campus }}</td>
-              <td>{{ entry.get_sex_display }}</td>
-              <td>{{ entry.check_in|date:"h:i A"|default:"—" }}</td>
-              <td>{{ entry.check_out|date:"h:i A"|default:"—" }}</td>
-
-              <td>
-                {% if entry.check_in and entry.check_out %}
-                <span class="text-success fw-bold">✔ Present</span>
-                {% elif entry.check_in and not entry.check_out %}
-                <span class="text-danger fw-bold">✖ Absent</span>
-                {% else %}
-                <span class="text-secondary">Not Scanned</span>
-                {% endif %}
-              </td>
-
-              <td>
-                {% if entry.check_in_image or entry.check_out_image %}
-                <button
-                  type="button"
-                  class="btn btn-sm btn-info"
-                  onclick="openImageViewer(
-                    '{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}',
-                    '{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}'
-                  )"
-                >
-                  View
-                </button>
-                {% else %} — {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  {% empty %}
-  <div class="alert alert-info">No closed events yet.</div>
-  {% endfor %}
-</div>
-
-<div id="imageViewer" class="image-viewer">
-  <button class="close-viewer" onclick="closeImageViewer()">×</button>
-
-  <img id="viewerImage" src="" alt="Attendance Image" />
-
-  <button id="prevBtn" class="nav-btn left" onclick="prevImage()">‹</button>
-  <button id="nextBtn" class="nav-btn right" onclick="nextImage()">›</button>
-
-  <p id="imageLabel"></p>
-</div>
 
 <style>
+  .edit-event-viewer,
   .image-viewer,
   .full-list-viewer {
     display: none;
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.88);
+    z-index: 10000;
     align-items: center;
     justify-content: center;
   }
 
-  .image-viewer {
-    z-index: 9999;
-    flex-direction: column;
+  .edit-event-box,
+  .full-list-box {
+    background: white;
+    width: 95%;
+    max-width: 1400px;
+    border-radius: 14px;
+    padding: 25px;
+    max-height: 92vh;
+    overflow-y: auto;
+    position: relative;
   }
 
-  .full-list-viewer {
-    z-index: 9998;
-    padding: 30px;
+  .edit-event-box {
+    max-width: 420px;
+  }
+
+  .close-edit-event,
+  .close-full-list,
+  .close-viewer {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    border: none;
+    background: none;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .image-viewer {
+    z-index: 10001;
+    flex-direction: column;
   }
 
   .image-viewer img {
@@ -242,35 +54,9 @@
     background: white;
   }
 
-  .full-list-box {
-    background: white;
-    width: 90%;
-    max-height: 85vh;
-    overflow-y: auto;
-    border-radius: 12px;
-    padding: 25px;
-    position: relative;
-  }
-
-  .close-viewer,
-  .close-full-list {
-    position: absolute;
-    border: none;
-    background: none;
-    cursor: pointer;
-  }
-
   .close-viewer {
-    top: 25px;
-    right: 35px;
-    font-size: 38px;
     color: white;
-  }
-
-  .close-full-list {
-    top: 15px;
-    right: 20px;
-    font-size: 30px;
+    font-size: 38px;
   }
 
   .nav-btn {
@@ -299,46 +85,340 @@
   }
 </style>
 
+<div class="container-fluid">
+  <h3 class="mb-4">Attendance Log</h3>
+
+  {% for event in events %}
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+      <div
+        class="d-flex justify-content-between align-items-start flex-wrap mb-3"
+      >
+        <div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h4 class="mb-0">{{ event.title }}</h4>
+
+            {% if event.is_active %}
+            <span class="badge bg-success">Active Event</span>
+
+            {% elif event.event_date > today %}
+            <span class="badge bg-warning text-dark">Pending Event</span>
+
+            {% else %}
+            <span class="badge bg-secondary">Closed</span>
+            {% endif %}
+          </div>
+
+          {% if event.venue %}
+          <p class="text-muted mb-1 mt-2">Venue: {{ event.venue }}</p>
+          {% endif %}
+
+          <p class="text-muted mb-1">
+            Event Date: {{ event.event_date|date:"M d, Y" }}
+          </p>
+
+          {% if event.event_date > today %}
+          <p class="text-warning fw-bold mb-1">Waiting to be opened</p>
+
+          {% else %}
+          <p class="text-muted mb-1">
+            Started: {{ event.created_at|date:"M d, Y h:i A" }}
+          </p>
+
+          <p class="text-muted mb-0">
+            Closed: {{ event.closed_at|date:"M d, Y h:i A" }}
+          </p>
+          {% endif %}
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          {% if event.event_date > today %}
+          <form method="POST" action="{% url 'open_event_now' event.id %}">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="btn btn-primary btn-sm"
+              onclick="
+                return confirm('Are you sure you want to open this event now?');
+              "
+            >
+              Open Now
+            </button>
+          </form>
+
+          {% else %}
+          <form method="POST" action="{% url 'reopen_event' event.id %}">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="btn btn-success btn-sm"
+              onclick="
+                return confirm('Are you sure you want to reopen this event?');
+              "
+            >
+              Reopen Event
+            </button>
+          </form>
+          {% endif %}
+
+          <a
+            href="{% url 'export_attendance_excel' event.id %}"
+            class="btn btn-primary btn-sm"
+          >
+            Download Excel
+          </a>
+
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            onclick="openEditEvent(
+              '{{ event.id }}',
+              '{{ event.title|escapejs }}',
+              '{{ event.venue|escapejs }}',
+              '{{ event.event_date|date:'Y-m-d' }}'
+            )"
+          >
+            Edit Event
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Campus</th>
+              <th>Sex</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Status</th>
+              <th>Photo</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for entry in event.entries.all|slice:":6" %}
+            <tr>
+              <td>{{ entry.name|title }}</td>
+              <td>{{ entry.campus }}</td>
+              <td>{{ entry.get_sex_display }}</td>
+              <td>{{ entry.check_in|date:"h:i A"|default:"—" }}</td>
+              <td>{{ entry.check_out|date:"h:i A"|default:"—" }}</td>
+
+              <td>
+                {% if entry.check_in and entry.check_out %}
+                <span class="text-success fw-bold">✔ Present</span>
+
+                {% elif entry.check_in and not entry.check_out %}
+                <span class="text-danger fw-bold">✖ Absent</span>
+
+                {% else %}
+                <span class="text-secondary">Not Scanned</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if entry.check_in_image or entry.check_out_image %}
+                <button
+                  type="button"
+                  class="btn btn-info btn-sm text-white"
+                  onclick='openPhotoViewer(
+                    "{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}",
+                    "{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}"
+                  )'
+                >
+                  View
+                </button>
+                {% else %} — {% endif %}
+              </td>
+            </tr>
+
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">
+                No attendance records for this event.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if event.entries.count > 6 %}
+      <div class="text-end mt-3">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          onclick="openFullList('fullList{{ event.id }}')"
+        >
+          Show Full List
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- FULL LIST MODAL -->
+  <div id="fullList{{ event.id }}" class="full-list-viewer">
+    <div class="full-list-box">
+      <button
+        class="close-full-list"
+        onclick="closeFullList('fullList{{ event.id }}')"
+      >
+        ×
+      </button>
+
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <h4 class="fw-bold mb-0">{{ event.title }} - Full List</h4>
+
+        <input
+          type="text"
+          class="form-control w-25 me-5"
+          placeholder="Search entries..."
+          onkeyup="filterFullList(this, 'fullListTable{{ event.id }}')"
+        />
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Campus</th>
+              <th>Sex</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Status</th>
+              <th>Photo</th>
+            </tr>
+          </thead>
+
+          <tbody id="fullListTable{{ event.id }}">
+            {% for entry in event.entries.all %}
+            <tr>
+              <td class="entry-name">{{ entry.name|title }}</td>
+              <td>{{ entry.campus }}</td>
+              <td>{{ entry.get_sex_display }}</td>
+              <td>{{ entry.check_in|date:"h:i A"|default:"—" }}</td>
+              <td>{{ entry.check_out|date:"h:i A"|default:"—" }}</td>
+
+              <td>
+                {% if entry.check_in and entry.check_out %}
+                <span class="text-success fw-bold">✔ Present</span>
+
+                {% elif entry.check_in and not entry.check_out %}
+                <span class="text-danger fw-bold">✖ Absent</span>
+
+                {% else %}
+                <span class="text-secondary">Not Scanned</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if entry.check_in_image or entry.check_out_image %}
+                <button
+                  type="button"
+                  class="btn btn-info btn-sm text-white"
+                  onclick='openPhotoViewer(
+                    "{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}",
+                    "{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}"
+                  )'
+                >
+                  View
+                </button>
+                {% else %} — {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% empty %}
+  <div class="alert alert-info">No events found.</div>
+  {% endfor %}
+</div>
+
+<!-- EDIT EVENT MODAL -->
+<div id="editEventModal" class="edit-event-viewer">
+  <div class="edit-event-box">
+    <button class="close-edit-event" onclick="closeEditEvent()">×</button>
+
+    <h4 class="fw-bold mb-3">Edit Event</h4>
+
+    <form id="editEventForm" method="POST">
+      {% csrf_token %}
+
+      <input
+        id="editTitle"
+        name="title"
+        type="text"
+        class="form-control mb-2"
+        required
+      />
+
+      <input
+        id="editVenue"
+        name="venue"
+        type="text"
+        class="form-control mb-2"
+        required
+      />
+
+      <input
+        id="editEventDate"
+        name="event_date"
+        type="date"
+        class="form-control mb-3"
+        required
+      />
+
+      <button type="submit" class="btn btn-success">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<!-- IMAGE VIEWER -->
+<div id="imageViewer" class="image-viewer">
+  <button class="close-viewer" onclick="closeImageViewer()">×</button>
+
+  <img id="viewerImage" src="" alt="Attendance Image" />
+
+  <button id="prevBtn" class="nav-btn left" onclick="prevImage()">‹</button>
+
+  <button id="nextBtn" class="nav-btn right" onclick="nextImage()">›</button>
+
+  <p id="imageLabel"></p>
+</div>
+
 <script>
   let images = [];
   let currentIndex = 0;
 
-  function filterFullList(input, tableId) {
-    const filter = input.value.toLowerCase();
-    const rows = document.querySelectorAll(`#${tableId} tr`);
-
-    rows.forEach((row) => {
-      const nameCell = row.querySelector(".entry-name");
-
-      if (!nameCell) return;
-
-      const name = nameCell.textContent.toLowerCase();
-      row.style.display = name.includes(filter) ? "" : "none";
-    });
-  }
-
-  function openFullList(id) {
-    document.getElementById(id).style.display = "flex";
-  }
-
-  function closeFullList(id) {
-    document.getElementById(id).style.display = "none";
-  }
-
-  function openImageViewer(checkInImg, checkOutImg) {
+  function openPhotoViewer(checkInImg, checkOutImg) {
     images = [];
 
     if (checkInImg) {
-      images.push({ src: checkInImg, label: "Check-in Picture" });
+      images.push({
+        src: checkInImg,
+        label: "Check-in Picture",
+      });
     }
 
     if (checkOutImg) {
-      images.push({ src: checkOutImg, label: "Check-out Picture" });
+      images.push({
+        src: checkOutImg,
+        label: "Check-out Picture",
+      });
     }
 
     if (images.length === 0) return;
 
     currentIndex = 0;
+
     showImage();
 
     document.getElementById("imageViewer").style.display = "flex";
@@ -346,6 +426,7 @@
 
   function showImage() {
     document.getElementById("viewerImage").src = images[currentIndex].src;
+
     document.getElementById("imageLabel").innerText =
       images[currentIndex].label;
 
@@ -357,23 +438,63 @@
       nextBtn.style.display = "none";
     } else {
       prevBtn.style.display = currentIndex === 0 ? "none" : "block";
+
       nextBtn.style.display =
         currentIndex === images.length - 1 ? "none" : "block";
     }
   }
 
   function nextImage() {
-    currentIndex = (currentIndex + 1) % images.length;
+    currentIndex++;
     showImage();
   }
 
   function prevImage() {
-    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    currentIndex--;
     showImage();
   }
 
   function closeImageViewer() {
     document.getElementById("imageViewer").style.display = "none";
   }
+
+  function openEditEvent(eventId, title, venue, eventDate) {
+    document.getElementById("editTitle").value = title;
+    document.getElementById("editVenue").value = venue;
+    document.getElementById("editEventDate").value = eventDate;
+
+    document.getElementById("editEventForm").action = `/edit-event/${eventId}/`;
+
+    document.getElementById("editEventModal").style.display = "flex";
+  }
+
+  function closeEditEvent() {
+    document.getElementById("editEventModal").style.display = "none";
+  }
+
+  function openFullList(id) {
+    document.getElementById(id).style.display = "flex";
+  }
+
+  function closeFullList(id) {
+    document.getElementById(id).style.display = "none";
+  }
+
+  function filterFullList(input, tableId) {
+    const filter = input.value.toLowerCase();
+
+    const rows = document.querySelectorAll(`#${tableId} tr`);
+
+    rows.forEach((row) => {
+      const nameCell = row.querySelector(".entry-name");
+
+      if (!nameCell) return;
+
+      row.style.display = nameCell.textContent.toLowerCase().includes(filter)
+        ? ""
+        : "none";
+    });
+  }
 </script>
+
 {% endblock %}

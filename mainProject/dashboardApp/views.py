@@ -17,6 +17,10 @@ from django.shortcuts import get_object_or_404
 from .models import Event, QRSession, AttendanceEntry
 from .forms import AttendanceEntryForm
 
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font
+
 
 def login_user(request):
     if request.method == "POST":
@@ -130,17 +134,60 @@ def change_password(request):
         "form": form,
     })
 
+from django.utils import timezone
+
 @login_required
 def create_event(request):
-    if request.user.profile.status != "Approved":
+    if request.method != "POST":
         return redirect("home")
 
+    title = request.POST.get("title")
+    venue = request.POST.get("venue")
+    event_date = request.POST.get("event_date")
+
+    if not title or not venue or not event_date:
+        return redirect("home")
+
+    today = timezone.localdate()
+    is_today = event_date == str(today)
+
+    # Extra backend safety in case JS validation is bypassed
+    if event_date < str(today):
+        return redirect("home")
+
+    if is_today:
+        Event.objects.filter(is_active=True).update(
+            is_active=False,
+            closed_at=timezone.now()
+        )
+
+    Event.objects.create(
+        title=title,
+        venue=venue,
+        event_date=event_date,
+        is_active=is_today
+    )
+
+    if is_today:
+        return redirect("home")
+
+    return redirect("attendance_log")
+
+@login_required
+def open_event_now(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+
     if request.method == "POST":
-        title = request.POST.get("title")
+        Event.objects.filter(is_active=True).update(
+            is_active=False,
+            closed_at=timezone.now()
+        )
 
-        Event.objects.filter(is_active=True).update(is_active=False)
+        event.is_active = True
+        event.closed_at = None
+        event.save()
 
-        Event.objects.create(title=title)
+        messages.success(request, "Event opened successfully.")
 
     return redirect("home")
 
@@ -263,7 +310,8 @@ def close_event(request, event_id):
 
 @login_required
 def attendance_log(request):
-    events = Event.objects.filter(is_active=False).order_by("-closed_at")
+    events = Event.objects.filter(is_active=False).order_by("-event_date", "-created_at")
+
     return render(request, "app/attendance_log.html", {
         "events": events,
     })
@@ -354,3 +402,77 @@ def remove_approved_user(request, profile_id):
     profile.save()
 
     return redirect("incoming_requests")
+
+@login_required
+def export_attendance_excel(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attendance"
+    
+    
+    ws.append([event.title])
+    ws.append([])
+    ws.append(["Event Date", event.event_date.strftime("%B %d, %Y")])
+    ws.append(["Started", event.created_at.strftime("%B %d, %Y %I:%M %p")])
+    ws.append(["Closed At", event.closed_at.strftime("%B %d, %Y %I:%M %p") if event.closed_at else "Still Active"])
+    ws.append([])
+
+    headers = ["Name", "Campus", "Sex", "Check In", "Check Out", "Status"]
+    ws.append(headers)
+
+    for cell in ws[4]:
+        cell.font = Font(bold=True)
+
+    for entry in event.entries.all():
+        status = "Present" if entry.check_in and entry.check_out else "Absent"
+
+        ws.append([
+            entry.name.title(),
+            entry.campus,
+            entry.get_sex_display(),
+            entry.check_in.strftime("%I:%M %p") if entry.check_in else "—",
+            entry.check_out.strftime("%I:%M %p") if entry.check_out else "—",
+            status,
+        ])
+
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+
+        for cell in col:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+
+        ws.column_dimensions[column].width = max_length + 3
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{event.title}_attendance.xlsx"'
+
+    wb.save(response)
+    return response
+
+@login_required
+def edit_event(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+
+    if request.method == "POST":
+        title = request.POST.get("title")
+        venue = request.POST.get("venue")
+        event_date = request.POST.get("event_date")
+
+        if title and venue and event_date:
+            event.title = title
+            event.venue = venue
+            event.event_date = event_date
+            event.save()
+
+        if event.is_active:
+            return redirect("home")
+
+        return redirect("attendance_log")
+
+    return redirect("home")

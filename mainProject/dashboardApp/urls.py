@@ -23,4 +23,7 @@ urlpatterns = [
     path("close-event/<int:event_id>/", views.close_event, name="close_event"),
     path("attendance-log/", views.attendance_log, name="attendance_log"),
     path("reopen-event/<int:event_id>/", views.reopen_event, name="reopen_event"),
+    path("export-attendance/<int:event_id>/", views.export_attendance_excel, name="export_attendance_excel"),
+    path("open-event-now/<int:event_id>/", views.open_event_now, name="open_event_now"),
+    path("edit-event/<int:event_id>/", views.edit_event, name="edit_event"),
 ]
