@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 import uuid
 
 class Profile(models.Model):
@@ -20,11 +21,49 @@ class Event(models.Model):
     title = models.CharField(max_length=150)
     venue = models.CharField(max_length=255)
     event_date = models.DateField()
+    start_time = models.TimeField(null=True, blank=True)
 
     date = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+
+    #Captcha
+
+    captcha_enabled = models.BooleanField(default=False)
+
+    captcha_q1 = models.CharField(max_length=255, blank=True, null=True)
+    captcha_q1_a = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q1_b = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q1_c = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q1_answer = models.CharField(max_length=1, blank=True, null=True)
+
+    captcha_q2 = models.CharField(max_length=255, blank=True, null=True)
+    captcha_q2_a = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q2_b = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q2_c = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q2_answer = models.CharField(max_length=1, blank=True, null=True)
+
+    captcha_q3 = models.CharField(max_length=255, blank=True, null=True)
+    captcha_q3_a = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q3_b = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q3_c = models.CharField(max_length=100, blank=True, null=True)
+    captcha_q3_answer = models.CharField(max_length=1, blank=True, null=True)
+
+    @property
+    def status(self):
+        today = timezone.localdate()
+
+        if self.is_active:
+            return "Open"
+
+        if self.closed_at:
+            return "Closed"
+
+        if self.event_date >= today:
+            return "Pending"
+
+        return "Missed / Not Opened"
 
     def __str__(self):
         return self.title

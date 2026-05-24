@@ -88,7 +88,9 @@
 <div class="container-fluid">
   <h3 class="mb-4">Attendance Log</h3>
 
-  {% for event in events %}
+  <h5 class="fw-bold mb-3">Pending / Scheduled Events</h5>
+
+  {% for event in pending_events %}
   <div class="card mb-4 shadow-sm">
     <div class="card-body">
       <div
@@ -97,42 +99,23 @@
         <div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <h4 class="mb-0">{{ event.title }}</h4>
-
-            {% if event.is_active %}
-            <span class="badge bg-success">Active Event</span>
-
-            {% elif event.event_date > today %}
             <span class="badge bg-warning text-dark">Pending Event</span>
-
-            {% else %}
-            <span class="badge bg-secondary">Closed</span>
-            {% endif %}
           </div>
 
-          {% if event.venue %}
           <p class="text-muted mb-1 mt-2">Venue: {{ event.venue }}</p>
-          {% endif %}
 
           <p class="text-muted mb-1">
-            Event Date: {{ event.event_date|date:"M d, Y" }}
+            Date: {{ event.event_date|date:"M d, Y" }}
           </p>
 
-          {% if event.event_date > today %}
-          <p class="text-warning fw-bold mb-1">Waiting to be opened</p>
-
-          {% else %}
           <p class="text-muted mb-1">
-            Started: {{ event.created_at|date:"M d, Y h:i A" }}
+            Starts: {{ event.start_time|time:"h:i A"|default:"Not set" }}
           </p>
 
-          <p class="text-muted mb-0">
-            Closed: {{ event.closed_at|date:"M d, Y h:i A" }}
-          </p>
-          {% endif %}
+          <p class="text-warning fw-bold mb-0">Waiting to be opened</p>
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
-          {% if event.event_date > today %}
           <form method="POST" action="{% url 'open_event_now' event.id %}">
             {% csrf_token %}
             <button
@@ -146,7 +129,63 @@
             </button>
           </form>
 
-          {% else %}
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            onclick="openEditEvent(
+              '{{ event.id }}',
+              '{{ event.title|escapejs }}',
+              '{{ event.venue|escapejs }}',
+              '{{ event.event_date|date:'Y-m-d' }}',
+              '{{ event.start_time|time:'H:i'|default:'' }}'
+            )"
+          >
+            Edit Event
+          </button>
+
+          <a
+            href="{% url 'delete_event' event.id %}"
+            class="btn btn-danger btn-sm"
+            onclick="
+              return confirm('Are you sure you want to delete this event?');
+            "
+          >
+            Delete
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="alert alert-info">No pending events.</div>
+  {% endfor %}
+
+  <h5 class="fw-bold mb-3 mt-5">Closed Events</h5>
+
+  {% for event in closed_events %}
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+      <div
+        class="d-flex justify-content-between align-items-start flex-wrap mb-3"
+      >
+        <div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h4 class="mb-0">{{ event.title }}</h4>
+            <span class="badge bg-secondary">Closed</span>
+          </div>
+
+          <p class="text-muted mb-1 mt-2">Venue: {{ event.venue }}</p>
+
+          <p class="text-muted mb-1">
+            Started: {{ event.created_at|date:"M d, Y h:i A" }}
+          </p>
+
+          <p class="text-muted mb-0">
+            Closed: {{ event.closed_at|date:"M d, Y h:i A" }}
+          </p>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
           <form method="POST" action="{% url 'reopen_event' event.id %}">
             {% csrf_token %}
             <button
@@ -159,14 +198,29 @@
               Reopen Event
             </button>
           </form>
-          {% endif %}
 
+          <a
+            href="{% url 'event_detail' event.id %}"
+            class="btn btn-primary btn-sm"
+          >
+            View Event
+          </a>
+
+          <a
+            href="{% url 'export_attendance_pdf' event.id %}"
+            class="btn btn-dark btn-sm"
+          >
+            Download PDF
+          </a>
+
+          {% comment %}
           <a
             href="{% url 'export_attendance_excel' event.id %}"
             class="btn btn-primary btn-sm"
           >
             Download Excel
           </a>
+          {% endcomment %}
 
           <button
             type="button"
@@ -175,11 +229,22 @@
               '{{ event.id }}',
               '{{ event.title|escapejs }}',
               '{{ event.venue|escapejs }}',
-              '{{ event.event_date|date:'Y-m-d' }}'
+              '{{ event.event_date|date:'Y-m-d' }}',
+              '{{ event.start_time|time:'H:i'|default:'' }}'
             )"
           >
             Edit Event
           </button>
+
+          <a
+            href="{% url 'delete_event' event.id %}"
+            class="btn btn-danger btn-sm"
+            onclick="
+              return confirm('Are you sure you want to delete this event?');
+            "
+          >
+            Delete
+          </a>
         </div>
       </div>
 
@@ -209,10 +274,8 @@
               <td>
                 {% if entry.check_in and entry.check_out %}
                 <span class="text-success fw-bold">✔ Present</span>
-
                 {% elif entry.check_in and not entry.check_out %}
-                <span class="text-danger fw-bold">✖ Absent</span>
-
+                <span class="text-danger fw-bold">✖ Checked In Only</span>
                 {% else %}
                 <span class="text-secondary">Not Scanned</span>
                 {% endif %}
@@ -259,7 +322,6 @@
     </div>
   </div>
 
-  <!-- FULL LIST MODAL -->
   <div id="fullList{{ event.id }}" class="full-list-viewer">
     <div class="full-list-box">
       <button
@@ -306,10 +368,8 @@
               <td>
                 {% if entry.check_in and entry.check_out %}
                 <span class="text-success fw-bold">✔ Present</span>
-
                 {% elif entry.check_in and not entry.check_out %}
-                <span class="text-danger fw-bold">✖ Absent</span>
-
+                <span class="text-danger fw-bold">✖ Checked In Only</span>
                 {% else %}
                 <span class="text-secondary">Not Scanned</span>
                 {% endif %}
@@ -338,11 +398,10 @@
   </div>
 
   {% empty %}
-  <div class="alert alert-info">No events found.</div>
+  <div class="alert alert-info">No closed events yet.</div>
   {% endfor %}
 </div>
 
-<!-- EDIT EVENT MODAL -->
 <div id="editEventModal" class="edit-event-viewer">
   <div class="edit-event-box">
     <button class="close-edit-event" onclick="closeEditEvent()">×</button>
@@ -372,6 +431,14 @@
         id="editEventDate"
         name="event_date"
         type="date"
+        class="form-control mb-2"
+        required
+      />
+
+      <input
+        id="editStartTime"
+        name="start_time"
+        type="time"
         class="form-control mb-3"
         required
       />
@@ -381,14 +448,12 @@
   </div>
 </div>
 
-<!-- IMAGE VIEWER -->
 <div id="imageViewer" class="image-viewer">
   <button class="close-viewer" onclick="closeImageViewer()">×</button>
 
   <img id="viewerImage" src="" alt="Attendance Image" />
 
   <button id="prevBtn" class="nav-btn left" onclick="prevImage()">‹</button>
-
   <button id="nextBtn" class="nav-btn right" onclick="nextImage()">›</button>
 
   <p id="imageLabel"></p>
@@ -418,7 +483,6 @@
     if (images.length === 0) return;
 
     currentIndex = 0;
-
     showImage();
 
     document.getElementById("imageViewer").style.display = "flex";
@@ -438,7 +502,6 @@
       nextBtn.style.display = "none";
     } else {
       prevBtn.style.display = currentIndex === 0 ? "none" : "block";
-
       nextBtn.style.display =
         currentIndex === images.length - 1 ? "none" : "block";
     }
@@ -458,10 +521,11 @@
     document.getElementById("imageViewer").style.display = "none";
   }
 
-  function openEditEvent(eventId, title, venue, eventDate) {
+  function openEditEvent(eventId, title, venue, eventDate, startTime) {
     document.getElementById("editTitle").value = title;
     document.getElementById("editVenue").value = venue;
     document.getElementById("editEventDate").value = eventDate;
+    document.getElementById("editStartTime").value = startTime || "";
 
     document.getElementById("editEventForm").action = `/edit-event/${eventId}/`;
 
@@ -482,7 +546,6 @@
 
   function filterFullList(input, tableId) {
     const filter = input.value.toLowerCase();
-
     const rows = document.querySelectorAll(`#${tableId} tr`);
 
     rows.forEach((row) => {

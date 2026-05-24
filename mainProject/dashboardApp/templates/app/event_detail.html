@@ -1,0 +1,1016 @@
+{% extends "app/base.html" %} {% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">{{ event.title }}</h2>
+    <p class="text-muted mb-0">
+      Manage QR codes, attendance entries, and event records.
+    </p>
+  </div>
+
+  <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm">
+    Back to Events
+  </a>
+</div>
+
+<div class="card p-4 mb-4 shadow-sm">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h4 class="mb-0">{{ event.title }}</h4>
+
+        {% if event.is_active %}
+        <span class="badge bg-success">Open Event</span>
+        {% else %}
+        <span class="badge bg-secondary">Closed Event</span>
+        {% endif %}
+      </div>
+
+      <p class="text-muted mb-1 mt-2">Venue: {{ event.venue }}</p>
+      <p class="text-muted mb-1">Date: {{ event.event_date|date:"M d, Y" }}</p>
+      <p class="text-muted mb-1">
+        Start Time: {{ event.start_time|time:"h:i A"|default:"Not set" }}
+      </p>
+      <p class="text-muted mb-1">
+        Created: {{ event.created_at|date:"M d, Y h:i A" }}
+      </p>
+
+      {% if event.closed_at %}
+      <p class="text-muted mb-0">
+        Closed: {{ event.closed_at|date:"M d, Y h:i A" }}
+      </p>
+      {% endif %}
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      {% if event.is_active %}
+      <form method="POST" action="{% url 'close_event' event.id %}">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="btn btn-danger btn-sm"
+          onclick="
+            return confirm(
+              'Are you sure you want to close this event? This will finalize the attendance and move it to the Attendance Log.',
+            );
+          "
+        >
+          Close Event
+        </button>
+      </form>
+      {% endif %}
+
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        onclick="openEditEvent(
+          '{{ event.id }}',
+          '{{ event.title|escapejs }}',
+          '{{ event.venue|escapejs }}',
+          '{{ event.event_date|date:'Y-m-d' }}',
+          '{{ event.start_time|time:'H:i'|default:'' }}'
+        )"
+      >
+        Edit Event
+      </button>
+
+      <a
+        href="{% url 'export_attendance_pdf' event.id %}"
+        class="btn btn-dark btn-sm"
+      >
+        Download PDF
+      </a>
+
+      {% comment %}
+      <a
+        href="{% url 'export_attendance_excel' event.id %}"
+        class="btn btn-success btn-sm"
+      >
+        Download Excel
+      </a>
+      {% endcomment %}
+
+      <a
+        href="{% url 'delete_event' event.id %}"
+        class="btn btn-outline-danger btn-sm"
+        onclick="return confirm('Are you sure you want to delete this event?');"
+      >
+        Delete Event
+      </a>
+    </div>
+  </div>
+
+  {% if event.is_active %}
+  <div class="mt-4 d-grid gap-2">
+    <a
+      href="{% url 'generate_qr' event.id 'check_in' %}"
+      class="btn btn-primary"
+    >
+      Generate Check-in QR
+    </a>
+
+    <a
+      href="{% url 'generate_qr' event.id 'check_out' %}"
+      class="btn btn-warning"
+    >
+      Generate Check-out QR
+    </a>
+  </div>
+  {% endif %} {% if qr_image %}
+  <div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <p class="mb-0">
+        <strong>QR Mode:</strong>
+        {{ latest_qr.get_mode_display }}
+      </p>
+
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        onclick="toggleQR('qrBox')"
+      >
+        -
+      </button>
+    </div>
+
+    <div id="qrBox">
+      <img
+        src="data:image/png;base64,{{ qr_image }}"
+        width="250"
+        height="250"
+        alt="Attendance QR Code"
+      />
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="mt-4 border rounded-4 p-3 bg-light">
+    <div
+      class="d-flex justify-content-between align-items-start flex-wrap gap-3"
+    >
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <h6 class="fw-bold mb-0">Captcha Quiz</h6>
+
+          {% if event.captcha_enabled %}
+          <span class="badge bg-success">Enabled</span>
+          {% else %}
+          <span class="badge bg-secondary">Disabled</span>
+          {% endif %}
+        </div>
+
+        <p class="text-muted small mb-0">
+          Require attendees to answer 3 event-related questions before uploading
+          attendance photo.
+        </p>
+      </div>
+
+      <div class="d-flex gap-2">
+        {% if event.captcha_enabled %}
+        <button
+          type="button"
+          class="btn btn-outline-dark btn-sm"
+          onclick="toggleCaptchaEditor()"
+        >
+          Edit Captcha
+        </button>
+
+        <form
+          method="POST"
+          action="{% url 'update_captcha' event.id %}"
+          onsubmit="return confirm('Disable captcha quiz for this event?');"
+        >
+          {% csrf_token %}
+          <input type="hidden" name="captcha_action" value="disable" />
+
+          <button type="submit" class="btn btn-outline-danger btn-sm">
+            Disable Captcha
+          </button>
+        </form>
+        {% else %}
+        <button
+          type="button"
+          class="btn btn-dark btn-sm"
+          onclick="toggleCaptchaEditor()"
+        >
+          Set Up Captcha Quiz
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if event.captcha_enabled %}
+    <div class="mt-3 small" id="captchaSummary">
+      <div>
+        <strong>Question 1:</strong> {{ event.captcha_q1|default:"Not set" }}
+        <span class="text-success ms-2"
+          >Correct: {{ event.captcha_q1_answer|default:"Not set" }}</span
+        >
+      </div>
+
+      <div>
+        <strong>Question 2:</strong> {{ event.captcha_q2|default:"Not set" }}
+        <span class="text-success ms-2"
+          >Correct: {{ event.captcha_q2_answer|default:"Not set" }}</span
+        >
+      </div>
+
+      <div>
+        <strong>Question 3:</strong> {{ event.captcha_q3|default:"Not set" }}
+        <span class="text-success ms-2"
+          >Correct: {{ event.captcha_q3_answer|default:"Not set" }}</span
+        >
+      </div>
+    </div>
+    {% endif %}
+
+    <div id="captchaFields" class="mt-3" style="display: none">
+      <form
+        method="POST"
+        action="{% url 'update_captcha' event.id %}"
+        onsubmit="return validateCaptchaForm();"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="captcha_action" value="save" />
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Question 1</label>
+
+            <input
+              type="text"
+              name="captcha_q1"
+              class="form-control mb-2"
+              value="{{ event.captcha_q1|default:'' }}"
+              placeholder="Question 1"
+            />
+
+            <input
+              type="text"
+              name="captcha_q1_a"
+              class="form-control mb-2"
+              value="{{ event.captcha_q1_a|default:'' }}"
+              placeholder="Choice A"
+            />
+
+            <input
+              type="text"
+              name="captcha_q1_b"
+              class="form-control mb-2"
+              value="{{ event.captcha_q1_b|default:'' }}"
+              placeholder="Choice B"
+            />
+
+            <input
+              type="text"
+              name="captcha_q1_c"
+              class="form-control mb-2"
+              value="{{ event.captcha_q1_c|default:'' }}"
+              placeholder="Choice C"
+            />
+
+            <select name="captcha_q1_answer" class="form-select">
+              <option value="">Correct Answer</option>
+              <option
+                value="A"
+                {%
+                if
+                event.captcha_q1_answer=""
+                ="A"
+                %}selected{%
+                endif
+                %}
+              >
+                A - {{ event.captcha_q1_a }}
+              </option>
+              <option
+                value="B"
+                {%
+                if
+                event.captcha_q1_answer=""
+                ="B"
+                %}selected{%
+                endif
+                %}
+              >
+                B - {{ event.captcha_q1_b }}
+              </option>
+              <option
+                value="C"
+                {%
+                if
+                event.captcha_q1_answer=""
+                ="C"
+                %}selected{%
+                endif
+                %}
+              >
+                C - {{ event.captcha_q1_c }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Question 2</label>
+
+            <input
+              type="text"
+              name="captcha_q2"
+              class="form-control mb-2"
+              value="{{ event.captcha_q2|default:'' }}"
+              placeholder="Question 2"
+            />
+
+            <input
+              type="text"
+              name="captcha_q2_a"
+              class="form-control mb-2"
+              value="{{ event.captcha_q2_a|default:'' }}"
+              placeholder="Choice A"
+            />
+
+            <input
+              type="text"
+              name="captcha_q2_b"
+              class="form-control mb-2"
+              value="{{ event.captcha_q2_b|default:'' }}"
+              placeholder="Choice B"
+            />
+
+            <input
+              type="text"
+              name="captcha_q2_c"
+              class="form-control mb-2"
+              value="{{ event.captcha_q2_c|default:'' }}"
+              placeholder="Choice C"
+            />
+
+            <select name="captcha_q2_answer" class="form-select">
+              <option value="">Correct Answer</option>
+              <option
+                value="A"
+                {%
+                if
+                event.captcha_q2_answer=""
+                ="A"
+                %}selected{%
+                endif
+                %}
+              >
+                A - {{ event.captcha_q2_a }}
+              </option>
+              <option
+                value="B"
+                {%
+                if
+                event.captcha_q2_answer=""
+                ="B"
+                %}selected{%
+                endif
+                %}
+              >
+                B - {{ event.captcha_q2_b }}
+              </option>
+              <option
+                value="C"
+                {%
+                if
+                event.captcha_q2_answer=""
+                ="C"
+                %}selected{%
+                endif
+                %}
+              >
+                C - {{ event.captcha_q2_c }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Question 3</label>
+
+            <input
+              type="text"
+              name="captcha_q3"
+              class="form-control mb-2"
+              value="{{ event.captcha_q3|default:'' }}"
+              placeholder="Question 3"
+            />
+
+            <input
+              type="text"
+              name="captcha_q3_a"
+              class="form-control mb-2"
+              value="{{ event.captcha_q3_a|default:'' }}"
+              placeholder="Choice A"
+            />
+
+            <input
+              type="text"
+              name="captcha_q3_b"
+              class="form-control mb-2"
+              value="{{ event.captcha_q3_b|default:'' }}"
+              placeholder="Choice B"
+            />
+
+            <input
+              type="text"
+              name="captcha_q3_c"
+              class="form-control mb-2"
+              value="{{ event.captcha_q3_c|default:'' }}"
+              placeholder="Choice C"
+            />
+
+            <select name="captcha_q3_answer" class="form-select">
+              <option value="">Correct Answer</option>
+              <option
+                value="A"
+                {%
+                if
+                event.captcha_q3_answer=""
+                ="A"
+                %}selected{%
+                endif
+                %}
+              >
+                A - {{ event.captcha_q3_a }}
+              </option>
+              <option
+                value="B"
+                {%
+                if
+                event.captcha_q3_answer=""
+                ="B"
+                %}selected{%
+                endif
+                %}
+              >
+                B - {{ event.captcha_q3_b }}
+              </option>
+              <option
+                value="C"
+                {%
+                if
+                event.captcha_q3_answer=""
+                ="C"
+                %}selected{%
+                endif
+                %}
+              >
+                C - {{ event.captcha_q3_c }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-dark btn-sm mt-3">
+          Save Captcha Quiz
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm mt-3"
+          onclick="toggleCaptchaEditor()"
+        >
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <p class="text-muted mb-1">Present</p>
+          <h3 class="fw-bold text-success mb-0">{{ present_count }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <p class="text-muted mb-1">Checked In</p>
+          <h3 class="fw-bold text-danger mb-0">{{ absent_count }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <p class="text-muted mb-1">Not Yet Scanned</p>
+          <h3 class="fw-bold text-secondary mb-0">{{ not_yet_scanned }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Attendance List</h5>
+
+        <input
+          type="text"
+          class="form-control w-25"
+          placeholder="Search entries..."
+          onkeyup="filterTable(this, 'attendanceTable')"
+        />
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Campus</th>
+              <th>Sex</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="attendanceTable">
+            {% for entry in entries|slice:":6" %}
+            <tr>
+              <td class="entry-name">{{ entry.name|title }}</td>
+              <td>{{ entry.campus }}</td>
+              <td>{{ entry.get_sex_display }}</td>
+              <td>{{ entry.check_in|date:"h:i A"|default:"---" }}</td>
+              <td>{{ entry.check_out|date:"h:i A"|default:"---" }}</td>
+
+              <td>
+                {% if entry.check_in and entry.check_out %}
+                <span class="text-success fw-bold">✔ Present</span>
+                {% elif entry.check_in and not entry.check_out %}
+                <span class="text-danger fw-bold">✖ Checked In</span>
+                {% else %}
+                <span class="text-secondary">Not Scanned</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if entry.check_in_image or entry.check_out_image %}
+                <button
+                  type="button"
+                  class="btn btn-sm btn-info text-white"
+                  onclick="openImageViewer(
+                  '{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}',
+                  '{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}'
+                )"
+                >
+                  View
+                </button>
+                {% else %} --- {% endif %}
+
+                <a
+                  href="{% url 'delete_entry' entry.id %}"
+                  class="btn btn-sm btn-danger"
+                  onclick="return confirmRemoveEntry();"
+                >
+                  Remove
+                </a>
+              </td>
+            </tr>
+
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">
+                No entries detected
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        {% if entries|length > 6 %}
+        <div class="text-end mt-2">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            onclick="openFullList()"
+          >
+            Show Full List
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div id="fullListViewer" class="full-list-viewer">
+    <div class="full-list-box">
+      <button class="close-full-list" onclick="closeFullList()">×</button>
+
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <h4 class="fw-bold mb-0">Full Attendance List</h4>
+
+        <input
+          type="text"
+          class="form-control w-25 me-5"
+          placeholder="Search entries..."
+          onkeyup="filterTable(this, 'fullListTable')"
+        />
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Campus</th>
+              <th>Sex</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="fullListTable">
+            {% for entry in entries %}
+            <tr>
+              <td class="entry-name">{{ entry.name|title }}</td>
+              <td>{{ entry.campus }}</td>
+              <td>{{ entry.get_sex_display }}</td>
+              <td>{{ entry.check_in|date:"h:i A"|default:"---" }}</td>
+              <td>{{ entry.check_out|date:"h:i A"|default:"---" }}</td>
+
+              <td>
+                {% if entry.check_in and entry.check_out %}
+                <span class="text-success fw-bold">✔ Present</span>
+                {% elif entry.check_in and not entry.check_out %}
+                <span class="text-danger fw-bold">✖ Checked In</span>
+                {% else %}
+                <span class="text-secondary">Not Scanned</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if entry.check_in_image or entry.check_out_image %}
+                <button
+                  type="button"
+                  class="btn btn-sm btn-info text-white"
+                  onclick="openImageViewer(
+                  '{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}',
+                  '{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}'
+                )"
+                >
+                  View
+                </button>
+                {% else %} --- {% endif %}
+
+                <a
+                  href="{% url 'delete_entry' entry.id %}"
+                  class="btn btn-sm btn-danger"
+                  onclick="return confirmRemoveEntry();"
+                >
+                  Remove
+                </a>
+              </td>
+            </tr>
+
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">
+                No entries detected
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="editEventModal" class="edit-event-viewer">
+    <div class="edit-event-box">
+      <button class="close-edit-event" onclick="closeEditEvent()">×</button>
+
+      <h4 class="fw-bold mb-3">Edit Event</h4>
+
+      <form id="editEventForm" method="POST">
+        {% csrf_token %}
+
+        <input
+          type="text"
+          name="title"
+          id="editTitle"
+          class="form-control mb-2"
+          required
+        />
+
+        <input
+          type="text"
+          name="venue"
+          id="editVenue"
+          class="form-control mb-2"
+          required
+        />
+
+        <input
+          type="date"
+          name="event_date"
+          id="editEventDate"
+          class="form-control mb-2"
+          required
+        />
+
+        <input
+          type="time"
+          name="start_time"
+          id="editStartTime"
+          class="form-control mb-3"
+        />
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="imageViewer" class="image-viewer">
+    <button class="close-viewer" onclick="closeImageViewer()">×</button>
+
+    <button id="prevBtn" class="nav-btn left" onclick="prevImage()">‹</button>
+    <button id="nextBtn" class="nav-btn right" onclick="nextImage()">›</button>
+
+    <img id="viewerImage" src="" alt="Attendance Image" />
+
+    <p id="imageLabel"></p>
+  </div>
+
+  <style>
+    .image-viewer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .image-viewer img {
+      max-width: 85%;
+      max-height: 80vh;
+      border-radius: 12px;
+      background: white;
+    }
+
+    .close-viewer {
+      position: absolute;
+      top: 25px;
+      right: 35px;
+      font-size: 38px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 55px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .nav-btn.left {
+      left: 40px;
+    }
+
+    .nav-btn.right {
+      right: 40px;
+    }
+
+    #imageLabel {
+      color: white;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+
+    .full-list-viewer,
+    .edit-event-viewer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 9998;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .edit-event-viewer {
+      z-index: 9999;
+    }
+
+    .full-list-box,
+    .edit-event-box {
+      background: white;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      border-radius: 12px;
+      padding: 25px;
+      position: relative;
+    }
+
+    .edit-event-box {
+      width: 420px;
+      max-width: 95%;
+    }
+
+    .close-full-list,
+    .close-edit-event {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 30px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+  </style>
+
+  <script>
+    let images = [];
+    let currentIndex = 0;
+
+    function openEditEvent(eventId, title, venue, eventDate, startTime) {
+      document.getElementById("editTitle").value = title;
+      document.getElementById("editVenue").value = venue;
+      document.getElementById("editEventDate").value = eventDate;
+      document.getElementById("editStartTime").value = startTime || "";
+
+      document.getElementById("editEventForm").action =
+        `/edit-event/${eventId}/`;
+
+      document.getElementById("editEventModal").style.display = "flex";
+    }
+
+    function closeEditEvent() {
+      document.getElementById("editEventModal").style.display = "none";
+    }
+
+    function filterTable(input, tableId) {
+      const filter = input.value.toLowerCase();
+      const rows = document.querySelectorAll(`#${tableId} tr`);
+
+      rows.forEach((row) => {
+        const nameCell = row.querySelector(".entry-name");
+        if (!nameCell) return;
+
+        row.style.display = nameCell.textContent.toLowerCase().includes(filter)
+          ? ""
+          : "none";
+      });
+    }
+
+    function openFullList() {
+      document.getElementById("fullListViewer").style.display = "flex";
+    }
+
+    function closeFullList() {
+      document.getElementById("fullListViewer").style.display = "none";
+    }
+
+    function confirmRemoveEntry() {
+      return confirm("Are you sure you want to remove this entry?");
+    }
+
+    function toggleQR(id) {
+      const qrBox = document.getElementById(id);
+      if (!qrBox) return;
+
+      qrBox.style.display = qrBox.style.display === "none" ? "block" : "none";
+    }
+
+    function openImageViewer(checkInImg, checkOutImg) {
+      images = [];
+
+      if (checkInImg) {
+        images.push({
+          src: checkInImg,
+          label: "Check-in Picture",
+        });
+      }
+
+      if (checkOutImg) {
+        images.push({
+          src: checkOutImg,
+          label: "Check-out Picture",
+        });
+      }
+
+      if (images.length === 0) return;
+
+      currentIndex = 0;
+      showImage();
+
+      document.getElementById("imageViewer").style.display = "flex";
+    }
+
+    function showImage() {
+      document.getElementById("viewerImage").src = images[currentIndex].src;
+      document.getElementById("imageLabel").innerText =
+        images[currentIndex].label;
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+
+      if (images.length <= 1) {
+        prevBtn.style.display = "none";
+        nextBtn.style.display = "none";
+      } else {
+        prevBtn.style.display = currentIndex === 0 ? "none" : "block";
+        nextBtn.style.display =
+          currentIndex === images.length - 1 ? "none" : "block";
+      }
+    }
+
+    function nextImage() {
+      currentIndex = (currentIndex + 1) % images.length;
+      showImage();
+    }
+
+    function prevImage() {
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      showImage();
+    }
+
+    function closeImageViewer() {
+      document.getElementById("imageViewer").style.display = "none";
+    }
+
+    function toggleCaptchaEditor() {
+      const fields = document.getElementById("captchaFields");
+      const summary = document.getElementById("captchaSummary");
+
+      if (!fields) return;
+
+      const isHidden =
+        fields.style.display === "none" || fields.style.display === "";
+
+      fields.style.display = isHidden ? "block" : "none";
+
+      if (summary) {
+        summary.style.display = isHidden ? "none" : "block";
+      }
+    }
+
+    function validateCaptchaForm() {
+      const fields = [
+        { name: "captcha_q1", label: "Question 1" },
+        { name: "captcha_q1_a", label: "Question 1 - Choice A" },
+        { name: "captcha_q1_b", label: "Question 1 - Choice B" },
+        { name: "captcha_q1_c", label: "Question 1 - Choice C" },
+        { name: "captcha_q1_answer", label: "Question 1 - Correct Answer" },
+
+        { name: "captcha_q2", label: "Question 2" },
+        { name: "captcha_q2_a", label: "Question 2 - Choice A" },
+        { name: "captcha_q2_b", label: "Question 2 - Choice B" },
+        { name: "captcha_q2_c", label: "Question 2 - Choice C" },
+        { name: "captcha_q2_answer", label: "Question 2 - Correct Answer" },
+
+        { name: "captcha_q3", label: "Question 3" },
+        { name: "captcha_q3_a", label: "Question 3 - Choice A" },
+        { name: "captcha_q3_b", label: "Question 3 - Choice B" },
+        { name: "captcha_q3_c", label: "Question 3 - Choice C" },
+        { name: "captcha_q3_answer", label: "Question 3 - Correct Answer" },
+      ];
+
+      let missingFields = [];
+
+      fields.forEach((field) => {
+        const input = document.querySelector(`[name="${field.name}"]`);
+
+        if (!input || input.value.trim() === "") {
+          missingFields.push(field.label);
+        }
+      });
+
+      if (missingFields.length > 0) {
+        alert(
+          "Please complete the captcha quiz before saving.\n\nMissing:\n- " +
+            missingFields.join("\n- "),
+        );
+
+        return false;
+      }
+
+      return true;
+    }
+  </script>
+
+  {% endblock %}
+</div>

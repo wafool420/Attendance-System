@@ -1,154 +1,162 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login | FacultyTrack</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | FacultyTrack</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: "Segoe UI", sans-serif;
-    }
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", sans-serif;
+      }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #f5f6fa;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f5f6fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-    .auth-card {
-      width: 100%;
-      max-width: 420px;
-      background: #fff;
-      padding: 35px;
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    }
+      .auth-card {
+        width: 100%;
+        max-width: 420px;
+        background: #fff;
+        padding: 35px;
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      }
 
-    .brand {
-      text-align: center;
-      margin-bottom: 25px;
-    }
+      .brand {
+        text-align: center;
+        margin-bottom: 25px;
+      }
 
-    .brand-icon {
-      width: 55px;
-      height: 55px;
-      background: #e5b84b;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 12px;
-      font-size: 24px;
-    }
+      .brand-icon {
+        width: 55px;
+        height: 55px;
+        background: #e5b84b;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+        font-size: 24px;
+      }
 
-    h1 {
-      margin: 0;
-      color: #0f3d2e;
-      font-size: 28px;
-    }
+      h1 {
+        margin: 0;
+        color: #0f3d2e;
+        font-size: 28px;
+      }
 
-    .subtitle {
-      color: #6c757d;
-      margin-top: 6px;
-      font-size: 14px;
-    }
+      .subtitle {
+        color: #6c757d;
+        margin-top: 6px;
+        font-size: 14px;
+      }
 
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
-      color: #333;
-    }
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #333;
+      }
 
-    input {
-      width: 100%;
-      padding: 12px 14px;
-      margin-bottom: 18px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      outline: none;
-      font-size: 15px;
-    }
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        margin-bottom: 18px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        outline: none;
+        font-size: 15px;
+      }
 
-    input:focus {
-      border-color: #0f3d2e;
-      box-shadow: 0 0 0 3px rgba(15, 61, 46, 0.12);
-    }
+      input:focus {
+        border-color: #0f3d2e;
+        box-shadow: 0 0 0 3px rgba(15, 61, 46, 0.12);
+      }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #0f3d2e;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 15px;
-    }
+      button {
+        width: 100%;
+        padding: 12px;
+        background: #0f3d2e;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 15px;
+      }
 
-    button:hover {
-      background: #174d3a;
-    }
+      button:hover {
+        background: #174d3a;
+      }
 
-    .auth-link {
-      text-align: center;
-      margin-top: 18px;
-      font-size: 14px;
-    }
+      .auth-link {
+        text-align: center;
+        margin-top: 18px;
+        font-size: 14px;
+      }
 
-    .auth-link a {
-      color: #0f3d2e;
-      font-weight: 600;
-      text-decoration: none;
-    }
+      .auth-link a {
+        color: #0f3d2e;
+        font-weight: 600;
+        text-decoration: none;
+      }
 
-    .message {
-      background: #ffe8e8;
-      color: #b42318;
-      padding: 10px;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
-  </style>
-</head>
+      .message {
+        background: #ffe8e8;
+        color: #b42318;
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
 
-<body>
-  <div class="auth-card">
-    <div class="brand">
-      <div class="brand-icon">🎓</div>
-      <h1>FacultyTrack</h1>
-      <p class="subtitle">Sign in to continue</p>
+  <body>
+    <div class="auth-card">
+      <div class="brand">
+        <div class="brand-icon">🎓</div>
+        <h1>SNSU Attendace Tracker</h1>
+        <p class="subtitle">Sign in to continue</p>
+      </div>
+
+      {% if messages %} {% for message in messages %}
+      <div class="message">{{ message }}</div>
+      {% endfor %} {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <label>Username</label>
+        <input
+          type="text"
+          name="username"
+          placeholder="Enter your username"
+          required
+        />
+
+        <label>Password</label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Enter your password"
+          required
+        />
+
+        <button type="submit">Login</button>
+      </form>
+
+      <div class="auth-link">
+        Don’t have an account?
+        <a href="{% url 'register' %}">Create Account</a>
+      </div>
     </div>
-
-    {% if messages %}
-      {% for message in messages %}
-        <div class="message">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-
-    <form method="post">
-      {% csrf_token %}
-
-      <label>Username</label>
-      <input type="text" name="username" placeholder="Enter your username" required />
-
-      <label>Password</label>
-      <input type="password" name="password" placeholder="Enter your password" required />
-
-      <button type="submit">Login</button>
-    </form>
-
-    <div class="auth-link">
-      Don’t have an account?
-      <a href="{% url 'register' %}">Create Account</a>
-    </div>
-  </div>
-</body>
+  </body>
 </html>
