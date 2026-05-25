@@ -228,19 +228,22 @@
         />
 
         <label>Password</label>
-        <input
-          type="password"
-          name="password"
-          placeholder="Enter your password"
-          required
-        />
-        <button
-          type="button"
-          class="toggle-password"
-          onclick="togglePassword()"
-        >
-          Show
-        </button>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            name="password"
+            id="passwordInput"
+            placeholder="Enter your password"
+            required
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            onclick="togglePassword()"
+          >
+            Show
+          </button>
+        </div>
 
         <button type="submit">Login</button>
       </form>
