@@ -365,7 +365,7 @@ def close_event(request, event_id):
 
         messages.success(request, "Event closed and moved to attendance log.")
 
-    return redirect("home")
+    return redirect("event_detail")
 
 @login_required
 def attendance_log(request):
