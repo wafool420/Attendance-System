@@ -117,6 +117,33 @@
         font-size: 14px;
       }
 
+      .password-wrapper {
+        position: relative;
+        margin-bottom: 18px;
+      }
+
+      .password-wrapper input {
+        padding-right: 70px;
+        margin-bottom: 0;
+      }
+
+      .toggle-password {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: auto;
+        padding: 7px 10px;
+        background: #e5b84b;
+        color: #0f3d2e;
+        border-radius: 8px;
+        font-size: 13px;
+      }
+
+      .toggle-password:hover {
+        background: #d4a93f;
+      }
+
       @media (max-width: 480px) {
         body {
           padding: 16px;
@@ -207,6 +234,13 @@
           placeholder="Enter your password"
           required
         />
+        <button
+          type="button"
+          class="toggle-password"
+          onclick="togglePassword()"
+        >
+          Show
+        </button>
 
         <button type="submit">Login</button>
       </form>
@@ -216,5 +250,19 @@
         <a href="{% url 'register' %}">Create Account</a>
       </div>
     </div>
+    <script>
+      function togglePassword() {
+        const passwordInput = document.getElementById("passwordInput");
+        const toggleBtn = document.querySelector(".toggle-password");
+
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          toggleBtn.textContent = "Hide";
+        } else {
+          passwordInput.type = "password";
+          toggleBtn.textContent = "Show";
+        }
+      }
+    </script>
   </body>
 </html>
