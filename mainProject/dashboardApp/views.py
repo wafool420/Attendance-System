@@ -274,6 +274,7 @@ def attendance_form(request, code):
             name = form.cleaned_data["name"]
             campus = form.cleaned_data["campus"]
             sex = form.cleaned_data["sex"]
+            uploaded_image = form.cleaned_data.get("signature_image")
 
             entry = AttendanceEntry.objects.filter(
                 event=qr_session.event,
@@ -289,11 +290,18 @@ def attendance_form(request, code):
                     })
 
                 if not entry:
-                    entry = form.save(commit=False)
-                    entry.event = qr_session.event
+                    entry = AttendanceEntry(
+                        event=qr_session.event,
+                        name=name,
+                        campus=campus,
+                        sex=sex,
+                    )
 
                 entry.check_in = timezone.now()
-                entry.check_in_image = request.FILES.get("signature_image")
+
+                if uploaded_image:
+                    entry.check_in_image = uploaded_image
+
                 entry.save()
 
                 return render(request, "app/attendance_result.html", {
@@ -312,7 +320,10 @@ def attendance_form(request, code):
                     })
 
                 entry.check_out = timezone.now()
-                entry.check_out_image = request.FILES.get("signature_image")
+
+                if uploaded_image:
+                    entry.check_out_image = uploaded_image
+
                 entry.save()
 
                 return render(request, "app/attendance_result.html", {
