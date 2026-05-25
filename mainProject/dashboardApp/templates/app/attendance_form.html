@@ -396,7 +396,33 @@
                 </div>
               </div>
             </div>
-            {% endif %} {{ form.as_p }}
+            {% endif %}
+
+            <p>
+              <label for="{{ form.name.id_for_label }}">Name</label>
+              {{ form.name }}
+            </p>
+
+            <p>
+              <label for="{{ form.campus.id_for_label }}">Campus</label>
+              {{ form.campus }}
+            </p>
+
+            <p>
+              <label for="{{ form.sex.id_for_label }}">Sex</label>
+              {{ form.sex }}
+            </p>
+
+            <p>
+              <label for="{{ form.signature_image.id_for_label }}"
+                >Attendance Photo</label
+              >
+              <small class="text-muted d-block mb-2">
+                Please upload a clear selfie taken at the event. Do not upload a
+                written signature.
+              </small>
+              {{ form.signature_image }}
+            </p>
 
             <button type="submit" class="btn btn-success w-100 submit-btn">
               Submit Attendance
