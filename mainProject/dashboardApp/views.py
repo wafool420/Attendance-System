@@ -349,8 +349,11 @@ def delete_event(request, event_id):
 @login_required
 def delete_entry(request, entry_id):
     entry = get_object_or_404(AttendanceEntry, id=entry_id)
+    event_id = entry.event.id
+
     entry.delete()
-    return redirect('home')
+
+    return redirect("event_detail", event_id)
 
 @login_required
 def close_event(request, event_id):
@@ -365,7 +368,7 @@ def close_event(request, event_id):
 
         messages.success(request, "Event closed and moved to attendance log.")
 
-    return redirect("event_detail")
+    return redirect("home")
 
 @login_required
 def attendance_log(request):
