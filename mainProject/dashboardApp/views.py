@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
+from django.urls import reverse
 
 from .forms import RegisterUserForm
 from .models import Profile
@@ -49,7 +50,7 @@ def login_user(request):
             login(request, user)
             return redirect("home")
         else:
-            messages.success(request, "Incorrect user or password.")
+            messages.error(request, "Incorrect user or password.")
             return redirect("login")
 
     return render(request, "authentication/login.html", {})
@@ -114,6 +115,8 @@ def home(request):
 
 
 def logout_user(request):
+    list(messages.get_messages(request))
+
     logout(request)
     return redirect("login")
 
@@ -526,29 +529,45 @@ def edit_event(request, event_id):
         event_date = request.POST.get("event_date")
         start_time = request.POST.get("start_time") or None
 
+        def alert_back(message):
+            return HttpResponse(f"""
+                <script>
+                    alert("{message}");
+                    window.location.href = "/event/{event.id}/";
+                </script>
+            """)
+
         if not title or not venue or not event_date or not start_time:
-            messages.error(request, "Please complete all fields.")
-            return redirect("event_detail", event_id=event.id)
+            return alert_back("Please complete all fields.")
 
-        today = timezone.localdate()
         now = timezone.localtime()
+        selected_date = date.fromisoformat(event_date)
+        selected_time = time.fromisoformat(start_time)
 
-        if event_date < str(today):
-            messages.error(request, "You cannot set an event date in the past.")
-            return redirect("event_detail", event_id=event.id)
+        selected_datetime = timezone.make_aware(
+            timezone.datetime.combine(selected_date, selected_time),
+            timezone.get_current_timezone()
+        )
 
-        event_time = time.fromisoformat(start_time)
+        selected_datetime = selected_datetime.replace(second=0, microsecond=0)
+        current_datetime = now.replace(second=0, microsecond=0)
 
-        selected_is_past = (event_time.hour, event_time.minute) < (now.hour, now.minute)
-
-        if event_date == str(today) and selected_is_past:
-            messages.error(request, "Invalid start time. You cannot set the event time in the past.")
-            return redirect("event_detail", event_id=event.id)
+        if selected_datetime < current_datetime:
+            return alert_back("Invalid schedule. You cannot set the event date or time in the past.")
 
         event.title = title
         event.venue = venue
-        event.event_date = event_date
-        event.start_time = start_time
+        event.event_date = selected_date
+        event.start_time = selected_time
+
+        if selected_datetime <= current_datetime:
+            event.is_active = True
+            event.closed_at = None
+        else:
+            event.is_active = False
+            event.closed_at = None
+            QRSession.objects.filter(event=event, is_active=True).update(is_active=False)
+
         event.save()
 
         if event.is_active:
@@ -803,7 +822,7 @@ def export_attendance_pdf(request, event_id):
         ["NO.", "NAME", "CAMPUS", "M", "F", "STATUS"]
     ]
 
-    entries = event.entries.all().order_by("name")
+    entries = event.entries.all().order_by("check_in", "submitted_at")
 
     for index, entry in enumerate(entries, start=1):
         status = "PRESENT" if entry.check_in and entry.check_out else "CHECKED IN"

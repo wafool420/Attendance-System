@@ -1,4 +1,5 @@
-{% extends "app/base.html" %} {% block content %}
+{% extends "app/base.html" %} {% block title %}Event Details{% endblock %}
+{%block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
@@ -8,9 +9,11 @@
     </p>
   </div>
 
+  {% comment %}
   <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm">
     Back to Events
   </a>
+  {% endcomment %}
 </div>
 
 <div class="card p-4 mb-4 shadow-sm">
@@ -21,8 +24,10 @@
 
         {% if event.is_active %}
         <span class="badge bg-success">Open Event</span>
-        {% else %}
+        {% elif event.closed_at %}
         <span class="badge bg-secondary">Closed Event</span>
+        {% else %}
+        <span class="badge bg-warning text-dark">Pending Event</span>
         {% endif %}
       </div>
 
@@ -133,13 +138,23 @@
       </button>
     </div>
 
-    <div id="qrBox">
+    <div id="qrBox" class="qr-preview-box">
       <img
         src="data:image/png;base64,{{ qr_image }}"
         width="250"
         height="250"
         alt="Attendance QR Code"
+        class="qr-preview-img"
+        onclick="openQRViewer()"
       />
+
+      <button
+        type="button"
+        class="btn btn-dark btn-sm mt-2"
+        onclick="openQRViewer()"
+      >
+        Enlarge QR
+      </button>
     </div>
   </div>
   {% endif %}
@@ -281,7 +296,7 @@
                 endif
                 %}
               >
-                A - {{ event.captcha_q1_a }}
+                A
               </option>
               <option
                 value="B"
@@ -293,7 +308,7 @@
                 endif
                 %}
               >
-                B - {{ event.captcha_q1_b }}
+                B
               </option>
               <option
                 value="C"
@@ -305,7 +320,7 @@
                 endif
                 %}
               >
-                C - {{ event.captcha_q1_c }}
+                C
               </option>
             </select>
           </div>
@@ -357,7 +372,7 @@
                 endif
                 %}
               >
-                A - {{ event.captcha_q2_a }}
+                A
               </option>
               <option
                 value="B"
@@ -369,7 +384,7 @@
                 endif
                 %}
               >
-                B - {{ event.captcha_q2_b }}
+                B
               </option>
               <option
                 value="C"
@@ -381,7 +396,7 @@
                 endif
                 %}
               >
-                C - {{ event.captcha_q2_c }}
+                C
               </option>
             </select>
           </div>
@@ -433,7 +448,7 @@
                 endif
                 %}
               >
-                A - {{ event.captcha_q3_a }}
+                A
               </option>
               <option
                 value="B"
@@ -445,7 +460,7 @@
                 endif
                 %}
               >
-                B - {{ event.captcha_q3_b }}
+                B
               </option>
               <option
                 value="C"
@@ -457,7 +472,7 @@
                 endif
                 %}
               >
-                C - {{ event.captcha_q3_c }}
+                C
               </option>
             </select>
           </div>
@@ -507,20 +522,26 @@
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card border-0 shadow-sm rounded-4 mb-4 attendance-list-card">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div
+        class="d-flex justify-content-between align-items-center mb-3 attendance-list-header"
+      >
         <h5 class="fw-bold mb-0">Attendance List</h5>
 
         <input
           type="text"
-          class="form-control w-25"
+          class="form-control attendance-search"
           placeholder="Search entries..."
-          onkeyup="filterTable(this, 'attendanceTable')"
+          onkeyup="
+            filterTable(this, 'attendanceTable');
+            filterMobileCards(this, 'mobileAttendanceList');
+          "
         />
       </div>
 
-      <div class="table-responsive">
+      <!-- DESKTOP TABLE -->
+      <div class="table-responsive desktop-attendance-table">
         <table class="table align-middle">
           <thead class="table-light">
             <tr>
@@ -537,7 +558,7 @@
           <tbody id="attendanceTable">
             {% for entry in entries|slice:":6" %}
             <tr>
-              <td class="entry-name">{{ entry.name|title }}</td>
+              <td class="entry-name">{{ entry.name|upper }}</td>
               <td>{{ entry.campus }}</td>
               <td>{{ entry.get_sex_display }}</td>
               <td>{{ entry.check_in|date:"h:i A"|default:"---" }}</td>
@@ -586,19 +607,85 @@
             {% endfor %}
           </tbody>
         </table>
-
-        {% if entries|length > 6 %}
-        <div class="text-end mt-2">
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            onclick="openFullList()"
-          >
-            Show Full List
-          </button>
-        </div>
-        {% endif %}
       </div>
+
+      <!-- MOBILE CARDS -->
+      <div class="mobile-attendance-list" id="mobileAttendanceList">
+        {% for entry in entries|slice:":6" %}
+        <div class="mobile-attendance-card">
+          <div
+            class="d-flex justify-content-between align-items-start gap-2 mb-2"
+          >
+            <div>
+              <h6 class="fw-bold mb-1 entry-name">{{ entry.name|upper }}</h6>
+              <small class="text-muted"
+                >{{ entry.campus }} • {{ entry.get_sex_display }}</small
+              >
+            </div>
+
+            <div>
+              {% if entry.check_in and entry.check_out %}
+              <span class="badge bg-success">Present</span>
+              {% elif entry.check_in and not entry.check_out %}
+              <span class="badge bg-danger">Checked In</span>
+              {% else %}
+              <span class="badge bg-secondary">Not Scanned</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mobile-entry-info">
+            <div>
+              <span>Check In</span>
+              <strong>{{ entry.check_in|date:"h:i A"|default:"---" }}</strong>
+            </div>
+
+            <div>
+              <span>Check Out</span>
+              <strong>{{ entry.check_out|date:"h:i A"|default:"---" }}</strong>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-3">
+            {% if entry.check_in_image or entry.check_out_image %}
+            <button
+              type="button"
+              class="btn btn-sm btn-info text-white flex-fill"
+              onclick="openImageViewer(
+              '{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}',
+              '{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}'
+            )"
+            >
+              View Photo
+            </button>
+            {% endif %}
+
+            <a
+              href="{% url 'delete_entry' entry.id %}"
+              class="btn btn-sm btn-danger flex-fill"
+              onclick="return confirmRemoveEntry();"
+            >
+              Remove
+            </a>
+          </div>
+        </div>
+
+        {% empty %}
+        <div class="text-center text-muted py-3">No entries detected</div>
+        {% endfor %}
+      </div>
+
+      {% if entries|length > 6 %}
+      <div class="text-end mt-3">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm show-full-btn"
+          onclick="openFullList()"
+        >
+          Show Full List
+        </button>
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -606,18 +693,24 @@
     <div class="full-list-box">
       <button class="close-full-list" onclick="closeFullList()">×</button>
 
-      <div class="d-flex justify-content-between align-items-start mb-3">
+      <div
+        class="d-flex justify-content-between align-items-start mb-3 full-list-header"
+      >
         <h4 class="fw-bold mb-0">Full Attendance List</h4>
 
         <input
           type="text"
-          class="form-control w-25 me-5"
+          class="form-control full-list-search"
           placeholder="Search entries..."
-          onkeyup="filterTable(this, 'fullListTable')"
+          onkeyup="
+            filterTable(this, 'fullListTable');
+            filterMobileCards(this, 'mobileFullList');
+          "
         />
       </div>
 
-      <div class="table-responsive">
+      <!-- DESKTOP FULL TABLE -->
+      <div class="table-responsive desktop-full-table">
         <table class="table align-middle">
           <thead class="table-light">
             <tr>
@@ -634,7 +727,7 @@
           <tbody id="fullListTable">
             {% for entry in entries %}
             <tr>
-              <td class="entry-name">{{ entry.name|title }}</td>
+              <td class="entry-name">{{ entry.name|upper }}</td>
               <td>{{ entry.campus }}</td>
               <td>{{ entry.get_sex_display }}</td>
               <td>{{ entry.check_in|date:"h:i A"|default:"---" }}</td>
@@ -684,6 +777,72 @@
           </tbody>
         </table>
       </div>
+
+      <!-- MOBILE FULL CARDS -->
+      <div class="mobile-attendance-list" id="mobileFullList">
+        {% for entry in entries %}
+        <div class="mobile-attendance-card">
+          <div
+            class="d-flex justify-content-between align-items-start gap-2 mb-2"
+          >
+            <div>
+              <h6 class="fw-bold mb-1 entry-name">{{ entry.name|upper }}</h6>
+              <small class="text-muted"
+                >{{ entry.campus }} • {{ entry.get_sex_display }}</small
+              >
+            </div>
+
+            <div>
+              {% if entry.check_in and entry.check_out %}
+              <span class="badge bg-success">Present</span>
+              {% elif entry.check_in and not entry.check_out %}
+              <span class="badge bg-danger">Checked In</span>
+              {% else %}
+              <span class="badge bg-secondary">Not Scanned</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mobile-entry-info">
+            <div>
+              <span>Check In</span>
+              <strong>{{ entry.check_in|date:"h:i A"|default:"---" }}</strong>
+            </div>
+
+            <div>
+              <span>Check Out</span>
+              <strong>{{ entry.check_out|date:"h:i A"|default:"---" }}</strong>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-3">
+            {% if entry.check_in_image or entry.check_out_image %}
+            <button
+              type="button"
+              class="btn btn-sm btn-info text-white flex-fill"
+              onclick="openImageViewer(
+              '{% if entry.check_in_image %}{{ entry.check_in_image.url }}{% endif %}',
+              '{% if entry.check_out_image %}{{ entry.check_out_image.url }}{% endif %}'
+            )"
+            >
+              View Photo
+            </button>
+            {% endif %}
+
+            <a
+              href="{% url 'delete_entry' entry.id %}"
+              class="btn btn-sm btn-danger flex-fill"
+              onclick="return confirmRemoveEntry();"
+            >
+              Remove
+            </a>
+          </div>
+        </div>
+
+        {% empty %}
+        <div class="text-center text-muted py-3">No entries detected</div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
@@ -693,7 +852,11 @@
 
       <h4 class="fw-bold mb-3">Edit Event</h4>
 
-      <form id="editEventForm" method="POST">
+      <form
+        id="editEventForm"
+        method="POST"
+        onsubmit="return confirmEditEvent();"
+      >
         {% csrf_token %}
 
         <input
@@ -741,6 +904,25 @@
     <img id="viewerImage" src="" alt="Attendance Image" />
 
     <p id="imageLabel"></p>
+  </div>
+
+  <div id="qrViewer" class="qr-viewer">
+    <button class="close-qr-viewer" onclick="closeQRViewer()">×</button>
+
+    <div class="qr-viewer-box">
+      <p class="fw-bold mb-2">
+        QR Mode: {% if latest_qr %} {{ latest_qr.get_mode_display }} {% endif %}
+      </p>
+
+      <img
+        src="data:image/png;base64,{{ qr_image }}"
+        alt="Enlarged Attendance QR Code"
+      />
+
+      <p class="text-muted small mt-3 mb-0">
+        Scan this QR code to open the attendance form.
+      </p>
+    </div>
   </div>
 
   <style>
@@ -840,6 +1022,194 @@
       background: none;
       cursor: pointer;
     }
+
+    .mobile-attendance-list {
+      display: none;
+    }
+
+    .attendance-search {
+      width: 25%;
+    }
+
+    .full-list-search {
+      width: 25%;
+      margin-right: 45px;
+    }
+
+    @media (max-width: 768px) {
+      .attendance-list-header,
+      .full-list-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 12px;
+      }
+
+      .attendance-search,
+      .full-list-search {
+        width: 100% !important;
+        margin-right: 0 !important;
+      }
+
+      .desktop-attendance-table,
+      .desktop-full-table {
+        display: none;
+      }
+
+      .mobile-attendance-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .mobile-attendance-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 14px;
+        background: #fff;
+      }
+
+      .mobile-attendance-card h6 {
+        font-size: 15px;
+        word-break: break-word;
+      }
+
+      .mobile-entry-info {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .mobile-entry-info div {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .mobile-entry-info div:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .mobile-entry-info span {
+        color: #6c757d;
+        font-size: 13px;
+      }
+
+      .mobile-entry-info strong {
+        font-size: 13px;
+        text-align: right;
+      }
+
+      .show-full-btn {
+        width: 100%;
+      }
+
+      .full-list-viewer {
+        padding: 12px !important;
+        align-items: flex-start !important;
+      }
+
+      .full-list-box {
+        width: 100% !important;
+        max-height: 92vh !important;
+        padding: 18px !important;
+        margin-top: 20px;
+      }
+
+      .close-full-list {
+        top: 10px !important;
+        right: 14px !important;
+        font-size: 28px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .attendance-list-card .card-body {
+        padding: 16px;
+      }
+
+      .mobile-attendance-card {
+        padding: 13px;
+      }
+    }
+
+    .qr-preview-box {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .qr-preview-img {
+      cursor: pointer;
+      border-radius: 8px;
+      transition: 0.2s ease;
+    }
+
+    .qr-preview-img:hover {
+      transform: scale(1.02);
+    }
+
+    .qr-viewer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .qr-viewer-box {
+      background: white;
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      max-width: 520px;
+      width: 100%;
+    }
+
+    .qr-viewer-box img {
+      width: 420px;
+      height: 420px;
+      max-width: 100%;
+      max-height: 70vh;
+    }
+
+    .close-qr-viewer {
+      position: absolute;
+      top: 24px;
+      right: 34px;
+      font-size: 40px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 480px) {
+      .qr-preview-img {
+        width: 220px;
+        height: 220px;
+      }
+
+      .qr-viewer-box {
+        padding: 18px;
+        border-radius: 16px;
+      }
+
+      .qr-viewer-box img {
+        width: 310px;
+        height: 310px;
+      }
+
+      .close-qr-viewer {
+        top: 14px;
+        right: 20px;
+        font-size: 34px;
+      }
+    }
   </style>
 
   <script>
@@ -847,14 +1217,51 @@
     let currentIndex = 0;
 
     function openEditEvent(eventId, title, venue, eventDate, startTime) {
-      document.getElementById("editTitle").value = title;
-      document.getElementById("editVenue").value = venue;
-      document.getElementById("editEventDate").value = eventDate;
-      document.getElementById("editStartTime").value = startTime || "";
+      const titleInput = document.getElementById("editTitle");
+      const venueInput = document.getElementById("editVenue");
+      const dateInput = document.getElementById("editEventDate");
+      const timeInput = document.getElementById("editStartTime");
+
+      titleInput.value = title;
+      venueInput.value = venue;
+      dateInput.value = eventDate;
+      timeInput.value = startTime || "";
+
+      const now = new Date();
+
+      const today =
+        now.getFullYear() +
+        "-" +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(now.getDate()).padStart(2, "0");
+
+      const currentTime =
+        String(now.getHours()).padStart(2, "0") +
+        ":" +
+        String(now.getMinutes()).padStart(2, "0");
+
+      // This greys out / disables past dates in the date picker
+      dateInput.setAttribute("min", today);
+
+      function updateTimeLimit() {
+        if (dateInput.value === today) {
+          timeInput.setAttribute("min", currentTime);
+
+          if (timeInput.value && timeInput.value < currentTime) {
+            timeInput.value = currentTime;
+          }
+        } else {
+          timeInput.removeAttribute("min");
+        }
+      }
+
+      updateTimeLimit();
+
+      dateInput.onchange = updateTimeLimit;
 
       document.getElementById("editEventForm").action =
         `/edit-event/${eventId}/`;
-
       document.getElementById("editEventModal").style.display = "flex";
     }
 
@@ -1009,6 +1416,51 @@
       }
 
       return true;
+    }
+
+    function confirmEditEvent() {
+      const dateInput = document.getElementById("editEventDate");
+      const timeInput = document.getElementById("editStartTime");
+
+      if (!dateInput.value || !timeInput.value) {
+        alert("Please complete the event date and start time.");
+        return false;
+      }
+
+      const selectedDateTime = new Date(
+        dateInput.value + "T" + timeInput.value + ":00",
+      );
+
+      const now = new Date();
+      selectedDateTime.setSeconds(0, 0);
+      now.setSeconds(0, 0);
+
+      if (selectedDateTime < now) {
+        alert(
+          "Invalid schedule. You cannot set the event date or time in the past.",
+        );
+        return false;
+      }
+
+      return confirm(
+        "Are you sure you want to save these changes? If the event is scheduled for a later time, it will be moved back to Pending.",
+      );
+    }
+
+    function openQRViewer() {
+      const qrViewer = document.getElementById("qrViewer");
+
+      if (!qrViewer) return;
+
+      qrViewer.style.display = "flex";
+    }
+
+    function closeQRViewer() {
+      const qrViewer = document.getElementById("qrViewer");
+
+      if (!qrViewer) return;
+
+      qrViewer.style.display = "none";
     }
   </script>
 

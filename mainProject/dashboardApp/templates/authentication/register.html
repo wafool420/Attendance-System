@@ -127,6 +127,74 @@
         font-size: 13px;
         margin-bottom: 12px;
       }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 16px;
+          align-items: flex-start;
+        }
+
+        .auth-card {
+          max-width: 100%;
+          padding: 24px 22px;
+          border-radius: 16px;
+          margin-top: 18px;
+          margin-bottom: 18px;
+        }
+
+        .brand {
+          margin-bottom: 20px;
+        }
+
+        .brand-icon {
+          width: 48px;
+          height: 48px;
+          font-size: 21px;
+          border-radius: 12px;
+          margin-bottom: 10px;
+        }
+
+        h1 {
+          font-size: 24px;
+          line-height: 1.2;
+        }
+
+        .subtitle {
+          font-size: 13px;
+        }
+
+        .form-group {
+          margin-bottom: 13px;
+        }
+
+        label {
+          font-size: 14px;
+        }
+
+        input {
+          padding: 11px 13px;
+          font-size: 14px;
+        }
+
+        button {
+          padding: 11px;
+          font-size: 14px;
+        }
+
+        .auth-link {
+          font-size: 13px;
+        }
+
+        .form-error-msg {
+          font-size: 13px;
+          padding: 9px;
+        }
+
+        .errorlist {
+          font-size: 12px;
+          padding-left: 18px;
+        }
+      }
     </style>
   </head>
 
@@ -135,7 +203,7 @@
       <div class="brand">
         <div class="brand-icon">🎓</div>
         <h1>Create Account</h1>
-        <p class="subtitle">Register your FacultyTrack account</p>
+        <p class="subtitle">Register your SNSU Attendance Tracker account</p>
       </div>
 
       {% if form.errors %}

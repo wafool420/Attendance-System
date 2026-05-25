@@ -1,7 +1,7 @@
 {% extends "app/base.html" %} {% block title %}Today's Attendance{% endblock %}
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 page-header">
   <div>
     <h2 class="fw-bold mb-1">Today's Attendance</h2>
     <p class="text-muted mb-0">
@@ -9,13 +9,13 @@
     </p>
   </div>
 
-  <div class="bg-white px-3 py-2 rounded shadow-sm">
+  <div class="bg-white px-3 py-2 rounded shadow-sm date-pill">
     <i class="bi bi-calendar-check"></i>
     {% now "F d, Y" %}
   </div>
 </div>
 
-<div class="card p-4 mb-4 shadow-sm">
+<div class="card p-4 mb-4 shadow-sm create-event-card">
   <h4 class="mb-3">Create Event</h4>
 
   <form id="eventForm" method="POST" action="{% url 'create_event' %}">
@@ -48,22 +48,23 @@
     <input
       type="time"
       name="start_time"
+      id="startTime"
       class="form-control mb-3"
-      placeholder="Enter venue"
+      required
     />
 
     <button type="submit" class="btn btn-success">Create Event</button>
   </form>
 </div>
 
-<div class="card border-0 shadow-sm rounded-4">
+<div class="card border-0 shadow-sm rounded-4 current-events-card">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="fw-bold mb-0">Current Open Events</h5>
     </div>
 
     {% if events %}
-    <div class="table-responsive">
+    <div class="table-responsive desktop-event-table">
       <table class="table align-middle">
         <thead class="table-light">
           <tr>
@@ -72,7 +73,6 @@
             <th>Date</th>
             <th>Start Time</th>
             <th>Created</th>
-
             <th class="text-end">Action</th>
           </tr>
         </thead>
@@ -99,6 +99,53 @@
         </tbody>
       </table>
     </div>
+
+    <div class="mobile-event-list">
+      {% for event in events %}
+      <div class="mobile-event-card">
+        <div
+          class="d-flex justify-content-between align-items-start gap-2 mb-2"
+        >
+          <div>
+            <h6 class="fw-bold mb-1">{{ event.title }}</h6>
+            <span class="badge bg-success">Open Event</span>
+          </div>
+
+          <a
+            href="{% url 'event_detail' event.id %}"
+            class="btn btn-primary btn-sm mobile-view-btn"
+          >
+            View
+          </a>
+        </div>
+
+        <div class="mobile-event-info">
+          <div>
+            <span>Venue</span>
+            <strong>{{ event.venue }}</strong>
+          </div>
+
+          <div>
+            <span>Date</span>
+            <strong>{{ event.event_date|date:"M d, Y" }}</strong>
+          </div>
+
+          <div>
+            <span>Start</span>
+            <strong
+              >{{ event.start_time|time:"h:i A"|default:"Not set" }}</strong
+            >
+          </div>
+
+          <div>
+            <span>Created</span>
+            <strong>{{ event.created_at|date:"M d, Y h:i A" }}</strong>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
     {% else %}
     <div class="alert alert-info mb-0">
       No open events right now. Create an event for today, or open a pending
@@ -108,15 +155,186 @@
   </div>
 </div>
 
+<style>
+  .mobile-event-list {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 12px;
+    }
+
+    .page-header h2 {
+      font-size: 24px;
+    }
+
+    .page-header p {
+      font-size: 14px;
+    }
+
+    .date-pill {
+      width: 100%;
+      font-size: 14px;
+    }
+
+    .create-event-card {
+      padding: 20px !important;
+      border-radius: 16px;
+    }
+
+    .create-event-card h4 {
+      font-size: 20px;
+    }
+
+    .form-control {
+      font-size: 14px;
+      padding: 11px 13px;
+    }
+
+    #eventForm button {
+      width: 100%;
+      padding: 11px;
+    }
+
+    .current-events-card .card-body {
+      padding: 18px;
+    }
+
+    .current-events-card h5 {
+      font-size: 18px;
+    }
+
+    .desktop-event-table {
+      display: none;
+    }
+
+    .mobile-event-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mobile-event-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .mobile-event-card h6 {
+      font-size: 16px;
+      word-break: break-word;
+    }
+
+    .mobile-view-btn {
+      width: auto !important;
+      flex-shrink: 0;
+    }
+
+    .mobile-event-info {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mobile-event-info div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 6px;
+    }
+
+    .mobile-event-info div:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .mobile-event-info span {
+      color: #6c757d;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .mobile-event-info strong {
+      font-size: 13px;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .alert {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .page-header h2 {
+      font-size: 22px;
+    }
+
+    .create-event-card {
+      padding: 18px !important;
+    }
+
+    .current-events-card .card-body {
+      padding: 16px;
+    }
+
+    .mobile-event-card {
+      padding: 13px;
+    }
+  }
+</style>
+
 <script>
   const eventForm = document.getElementById("eventForm");
+
+  function setCreateEventLimits() {
+    const dateInput = document.getElementById("eventDate");
+    const timeInput = document.getElementById("startTime");
+
+    if (!dateInput || !timeInput) return;
+
+    const now = new Date();
+
+    const today =
+      now.getFullYear() +
+      "-" +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(now.getDate()).padStart(2, "0");
+
+    const currentTime =
+      String(now.getHours()).padStart(2, "0") +
+      ":" +
+      String(now.getMinutes()).padStart(2, "0");
+
+    dateInput.setAttribute("min", today);
+
+    function updateTimeLimit() {
+      if (dateInput.value === today) {
+        timeInput.setAttribute("min", currentTime);
+
+        if (timeInput.value && timeInput.value < currentTime) {
+          timeInput.value = currentTime;
+        }
+      } else {
+        timeInput.removeAttribute("min");
+      }
+    }
+
+    updateTimeLimit();
+    dateInput.addEventListener("change", updateTimeLimit);
+  }
+
+  setCreateEventLimits();
 
   if (eventForm) {
     eventForm.addEventListener("submit", function (e) {
       const selectedDate = document.getElementById("eventDate").value;
-      const selectedTime = document.querySelector(
-        'input[name="start_time"]',
-      ).value;
+      const selectedTime = document.getElementById("startTime").value;
 
       const now = new Date();
 
@@ -134,7 +352,7 @@
 
       if (selectedDate < today) {
         e.preventDefault();
-        alert("Invalid event date.");
+        alert("Invalid event date. You cannot create an event in the past.");
         return;
       }
 

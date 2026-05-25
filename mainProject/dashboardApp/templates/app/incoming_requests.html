@@ -1,4 +1,5 @@
-{% extends "app/base.html" %} {% block content %}
+{% extends "app/base.html" %} {% block title %}Incoming Requests{% endblock %}
+{% block content %}
 
 <style>
   .page-header {
@@ -59,14 +60,17 @@
     background: #eee9ff;
     color: #5142b8;
   }
+
   .orange {
     background: #fff2dc;
     color: #f0a000;
   }
+
   .green {
     background: #e3f5ea;
     color: #16784b;
   }
+
   .red {
     background: #ffe6e6;
     color: #d93025;
@@ -110,12 +114,6 @@
     font-weight: 600;
   }
 
-  .tabs .active {
-    color: #0f6b3f;
-    border-bottom: 2px solid #0f6b3f;
-    font-weight: 600;
-  }
-
   table {
     width: 100%;
     border-collapse: collapse;
@@ -150,6 +148,7 @@
     align-items: center;
     justify-content: center;
     font-weight: 700;
+    flex-shrink: 0;
   }
 
   .applicant strong {
@@ -160,15 +159,6 @@
     color: #6c757d;
   }
 
-  .role-badge {
-    background: #eee9ff;
-    color: #5142b8;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
   .status-badge {
     background: #fff2dc;
     color: #b87500;
@@ -176,6 +166,17 @@
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-approved {
+    background: #e3f5ea;
+    color: #16784b;
+  }
+
+  .status-rejected {
+    background: #ffe6e6;
+    color: #d93025;
   }
 
   .actions {
@@ -207,6 +208,158 @@
     text-align: center;
     color: #6c757d;
     padding: 30px;
+  }
+
+  .mobile-requests-list {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 24px;
+    }
+
+    .page-title p {
+      font-size: 14px;
+    }
+
+    .date-box {
+      width: 100%;
+      font-size: 14px;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .stat-card {
+      padding: 16px;
+    }
+
+    .stat-icon {
+      width: 46px;
+      height: 46px;
+      font-size: 22px;
+    }
+
+    .stat-info h2 {
+      font-size: 24px;
+    }
+
+    .tabs {
+      overflow-x: auto;
+      gap: 18px;
+      padding: 14px 16px 0;
+      white-space: nowrap;
+    }
+
+    .tabs a {
+      font-size: 14px;
+    }
+
+    .desktop-requests-table {
+      display: none;
+    }
+
+    .mobile-requests-list {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .mobile-request-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px;
+    }
+
+    .mobile-request-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .mobile-request-top .applicant {
+      min-width: 0;
+    }
+
+    .mobile-request-top .applicant strong {
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .mobile-request-top .applicant small {
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    .mobile-request-info {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mobile-request-info div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 6px;
+    }
+
+    .mobile-request-info div:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .mobile-request-info span {
+      color: #6c757d;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .mobile-request-info strong {
+      font-size: 13px;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .mobile-request-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .mobile-request-actions .btn-action {
+      text-align: center;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .requests-card {
+      border-radius: 16px;
+    }
+
+    .mobile-requests-list {
+      padding: 14px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+    }
   }
 </style>
 
@@ -283,87 +436,204 @@
     >
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Applicant</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
+  <!-- DESKTOP TABLE -->
+  <div class="desktop-requests-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Applicant</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
 
-    <tbody>
-      {% for profile in profiles %}
-      <tr>
-        <td>
-          <div class="applicant">
-            <div class="avatar">{{ profile.user.first_name|first|upper }}</div>
-            <div>
-              <strong>
-                {{ profile.user.first_name }} {{ profile.user.last_name }}
-              </strong>
-              <small>{{ profile.user.email }}</small>
+      <tbody>
+        {% for profile in profiles %}
+        <tr>
+          <td>
+            <div class="applicant">
+              <div class="avatar">
+                {{ profile.user.first_name|first|upper }}
+              </div>
+
+              <div>
+                <strong>
+                  {{ profile.user.first_name }} {{ profile.user.last_name }}
+                </strong>
+                <small
+                  >{{ profile.user.email|default:profile.user.username }}</small
+                >
+              </div>
             </div>
-          </div>
-        </td>
+          </td>
 
-        <td>
-          <span class="status-badge"> {{ profile.status }} </span>
-        </td>
-
-        <td>
-          <div class="actions">
-            {% if profile.user == request.user %}
-            <span style="color: #aaa">---</span>
-
-            {% elif profile.status == "Pending" %}
-            <a
-              href="{% url 'approve_user' profile.id %}"
-              class="btn-action approve-btn"
+          <td>
+            {% if profile.status == "Approved" %}
+            <span class="status-badge status-approved"
+              >{{ profile.status }}</span
             >
-              Approve
-            </a>
-
-            <a
-              href="{% url 'reject_user' profile.id %}"
-              class="btn-action reject-btn"
-            >
-              Reject
-            </a>
-
-            {% elif profile.status == "Approved" %}
-            <a
-              href="{% url 'remove_approved_user' profile.id %}"
-              class="btn-action reject-btn"
-            >
-              Remove
-            </a>
-
             {% elif profile.status == "Rejected" %}
-            <a
-              href="{% url 'approve_user' profile.id %}"
-              class="btn-action approve-btn"
+            <span class="status-badge status-rejected"
+              >{{ profile.status }}</span
             >
-              Approve
-            </a>
-
-            <a
-              href="{% url 'delete_rejected_user' profile.id %}"
-              class="btn-action reject-btn"
-            >
-              Delete
-            </a>
+            {% else %}
+            <span class="status-badge">{{ profile.status }}</span>
             {% endif %}
+          </td>
+
+          <td>
+            <div class="actions">
+              {% if profile.user == request.user %}
+              <span class="text-muted text-center" style="grid-column: 1 / -1"
+                >---</span
+              >
+
+              {% elif profile.status == "Pending" %}
+              <a
+                href="{% url 'approve_user' profile.id %}"
+                class="btn-action approve-btn"
+              >
+                Approve
+              </a>
+
+              <a
+                href="{% url 'reject_user' profile.id %}"
+                class="btn-action reject-btn"
+              >
+                Reject
+              </a>
+
+              {% elif profile.status == "Approved" %}
+              <a
+                href="{% url 'remove_approved_user' profile.id %}"
+                class="btn-action reject-btn"
+              >
+                Remove
+              </a>
+
+              {% elif profile.status == "Rejected" %}
+              <a
+                href="{% url 'approve_user' profile.id %}"
+                class="btn-action approve-btn"
+              >
+                Approve
+              </a>
+
+              <a
+                href="{% url 'delete_rejected_user' profile.id %}"
+                class="btn-action reject-btn"
+              >
+                Delete
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+
+        {% empty %}
+        <tr>
+          <td colspan="3" class="empty-row">No requests found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MOBILE CARDS -->
+  <div class="mobile-requests-list">
+    {% for profile in profiles %}
+    <div class="mobile-request-card">
+      <div class="mobile-request-top">
+        <div class="applicant">
+          <div class="avatar">{{ profile.user.first_name|first|upper }}</div>
+
+          <div>
+            <strong>
+              {{ profile.user.first_name }} {{ profile.user.last_name }}
+            </strong>
+            <small
+              >{{ profile.user.email|default:profile.user.username }}</small
+            >
           </div>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="empty-row">No pending account requests.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </div>
+
+        {% if profile.status == "Approved" %}
+        <span class="status-badge status-approved">{{ profile.status }}</span>
+        {% elif profile.status == "Rejected" %}
+        <span class="status-badge status-rejected">{{ profile.status }}</span>
+        {% else %}
+        <span class="status-badge">{{ profile.status }}</span>
+        {% endif %}
+      </div>
+
+      <div class="mobile-request-info">
+        <div>
+          <span>Name</span>
+          <strong
+            >{{ profile.user.first_name }} {{ profile.user.last_name }}</strong
+          >
+        </div>
+
+        <div>
+          <span>Username</span>
+          <strong>{{ profile.user.username }}</strong>
+        </div>
+
+        <div>
+          <span>Status</span>
+          <strong>{{ profile.status }}</strong>
+        </div>
+      </div>
+
+      <div class="mobile-request-actions">
+        {% if profile.user == request.user %}
+        <span style="color: #aaa">---</span>
+
+        {% elif profile.status == "Pending" %}
+        <a
+          href="{% url 'approve_user' profile.id %}"
+          class="btn-action approve-btn"
+        >
+          Approve
+        </a>
+
+        <a
+          href="{% url 'reject_user' profile.id %}"
+          class="btn-action reject-btn"
+        >
+          Reject
+        </a>
+
+        {% elif profile.status == "Approved" %}
+        <a
+          href="{% url 'remove_approved_user' profile.id %}"
+          class="btn-action reject-btn"
+        >
+          Remove
+        </a>
+
+        {% elif profile.status == "Rejected" %}
+        <a
+          href="{% url 'approve_user' profile.id %}"
+          class="btn-action approve-btn"
+        >
+          Approve
+        </a>
+
+        <a
+          href="{% url 'delete_rejected_user' profile.id %}"
+          class="btn-action reject-btn"
+        >
+          Delete
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% empty %}
+    <div class="empty-row">No requests found.</div>
+    {% endfor %}
+  </div>
 </div>
 
 {% endblock %}

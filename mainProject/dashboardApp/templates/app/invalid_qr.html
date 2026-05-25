@@ -2,18 +2,126 @@
 <html>
   <head>
     <title>Invalid QR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f5f6fa;
+      }
+
+      .result-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 16px;
+      }
+
+      .result-card {
+        width: 100%;
+        max-width: 460px;
+        background: white;
+        border-radius: 20px;
+        padding: 34px 28px;
+        text-align: center;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+      }
+
+      .result-icon {
+        width: 68px;
+        height: 68px;
+        border-radius: 18px;
+        background: #ffe6e6;
+        color: #dc3545;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        font-size: 38px;
+        font-weight: 800;
+      }
+
+      h3 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #dc3545;
+        margin-bottom: 10px;
+        line-height: 1.3;
+      }
+
+      p {
+        color: #6c757d;
+        margin-bottom: 0;
+        font-size: 15px;
+      }
+
+      .small-note {
+        margin-top: 18px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        font-size: 14px;
+        color: #6c757d;
+      }
+
+      @media (max-width: 480px) {
+        .result-wrapper {
+          align-items: flex-start;
+          padding: 22px 12px;
+        }
+
+        .result-card {
+          padding: 28px 22px;
+          border-radius: 18px;
+          margin-top: 40px;
+        }
+
+        .result-icon {
+          width: 60px;
+          height: 60px;
+          font-size: 30px;
+          border-radius: 16px;
+        }
+
+        h3 {
+          font-size: 22px;
+        }
+
+        p {
+          font-size: 14px;
+        }
+
+        .small-note {
+          font-size: 13px;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-light">
-    <div class="container mt-5">
-      <div class="card p-4 mx-auto text-center" style="max-width: 500px">
+
+  <body>
+    <div class="result-wrapper">
+      <div class="result-card">
+        <div class="result-icon">×</div>
+
         <h3>Invalid or expired QR code.</h3>
-        <p class="text-muted">
-          Please scan the latest QR code from the administrator.
-        </p>
+
+        <p>Please scan the latest QR code from the administrator.</p>
+
+        <div class="small-note">
+          This QR code may have been replaced, closed, or already expired.
+        </div>
       </div>
     </div>
   </body>

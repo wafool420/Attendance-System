@@ -2,17 +2,181 @@
 <html>
   <head>
     <title>Attendance Result</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f5f6fa;
+      }
+
+      .result-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 16px;
+      }
+
+      .result-card {
+        width: 100%;
+        max-width: 460px;
+        background: white;
+        border-radius: 20px;
+        padding: 34px 28px;
+        text-align: center;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+      }
+
+      .result-icon {
+        width: 68px;
+        height: 68px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        font-size: 38px;
+        font-weight: 800;
+      }
+
+      .success-icon {
+        background: #e3f5ea;
+        color: #198754;
+      }
+
+      .error-icon {
+        background: #ffe6e6;
+        color: #dc3545;
+      }
+
+      .warning-icon {
+        background: #fff3cd;
+        color: #b58100;
+      }
+
+      .success-text {
+        color: #0f3d2e;
+      }
+
+      .error-text {
+        color: #dc3545;
+      }
+
+      .warning-text {
+        color: #b58100;
+      }
+
+      h3 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0f3d2e;
+        margin-bottom: 10px;
+        line-height: 1.3;
+      }
+
+      p {
+        color: #6c757d;
+        margin-bottom: 0;
+        font-size: 15px;
+      }
+
+      .small-note {
+        margin-top: 18px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        font-size: 14px;
+        color: #6c757d;
+      }
+
+      @media (max-width: 480px) {
+        .result-wrapper {
+          align-items: flex-start;
+          padding: 22px 12px;
+        }
+
+        .result-card {
+          padding: 28px 22px;
+          border-radius: 18px;
+          margin-top: 40px;
+        }
+
+        .result-icon {
+          width: 60px;
+          height: 60px;
+          font-size: 30px;
+          border-radius: 16px;
+        }
+
+        h3 {
+          font-size: 22px;
+        }
+
+        p {
+          font-size: 14px;
+        }
+
+        .small-note {
+          font-size: 13px;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-light">
-    <div class="container mt-5">
-      <div class="card p-4 mx-auto text-center" style="max-width: 500px">
-        <h3>{{ message }}</h3>
-        <p class="text-muted">You may now close this page.</p>
+
+  <body>
+  {% with msg=message|lower %}
+    {% if "no check-in record found" in msg %}
+      <div class="result-wrapper">
+        <div class="result-card">
+          <div class="result-icon error-icon">×</div>
+
+          <h3 class="error-text">{{ message }}</h3>
+
+          <p>No matching check-in record was found.</p>
+
+          <div class="small-note">Please contact the event staff for assistance.</div>
+        </div>
       </div>
-    </div>
-  </body>
+
+    {% elif "already checked in" in msg %}
+      <div class="result-wrapper">
+        <div class="result-card">
+          <div class="result-icon warning-icon">!</div>
+
+          <h3 class="warning-text">{{ message }}</h3>
+
+          <p>You have already submitted your check-in.</p>
+
+          <div class="small-note">You may now close this page.</div>
+        </div>
+      </div>
+
+    {% else %}
+      <div class="result-wrapper">
+        <div class="result-card">
+          <div class="result-icon success-icon">✓</div>
+
+          <h3 class="success-text">{{ message }}</h3>
+
+          <p>Your attendance has been recorded.</p>
+
+          <div class="small-note">You may now close this page.</div>
+        </div>
+      </div>
+    {% endif %}
+  {% endwith %}
+</body>
+</html>
 </html>

@@ -1,4 +1,5 @@
-{% extends 'app/base.html' %} {% block content %}
+{% extends 'app/base.html' %} {% block title %}Attendance Log {% endblock %}
+{%block content %}
 
 <style>
   .edit-event-viewer,
@@ -248,6 +249,7 @@
         </div>
       </div>
 
+      {% comment %}
       <div class="table-responsive">
         <table class="table table-bordered align-middle">
           <thead class="table-light">
@@ -265,7 +267,7 @@
           <tbody>
             {% for entry in event.entries.all|slice:":6" %}
             <tr>
-              <td>{{ entry.name|title }}</td>
+              <td class="entry-name">{{ entry.name|upper }}</td>
               <td>{{ entry.campus }}</td>
               <td>{{ entry.get_sex_display }}</td>
               <td>{{ entry.check_in|date:"h:i A"|default:"—" }}</td>
@@ -307,8 +309,7 @@
           </tbody>
         </table>
       </div>
-
-      {% if event.entries.count > 6 %}
+      {% endcomment %} {% if event.entries.count > 6 %} {% comment %}
       <div class="text-end mt-3">
         <button
           type="button"
@@ -318,7 +319,7 @@
           Show Full List
         </button>
       </div>
-      {% endif %}
+      {% endcomment %} {% endif %}
     </div>
   </div>
 
@@ -408,7 +409,11 @@
 
     <h4 class="fw-bold mb-3">Edit Event</h4>
 
-    <form id="editEventForm" method="POST">
+    <form
+      id="editEventForm"
+      method="POST"
+      onsubmit="return confirmEditEvent();"
+    >
       {% csrf_token %}
 
       <input
@@ -522,13 +527,50 @@
   }
 
   function openEditEvent(eventId, title, venue, eventDate, startTime) {
-    document.getElementById("editTitle").value = title;
-    document.getElementById("editVenue").value = venue;
-    document.getElementById("editEventDate").value = eventDate;
-    document.getElementById("editStartTime").value = startTime || "";
+    const titleInput = document.getElementById("editTitle");
+    const venueInput = document.getElementById("editVenue");
+    const dateInput = document.getElementById("editEventDate");
+    const timeInput = document.getElementById("editStartTime");
+
+    titleInput.value = title;
+    venueInput.value = venue;
+    dateInput.value = eventDate;
+    timeInput.value = startTime || "";
+
+    const now = new Date();
+
+    const today =
+      now.getFullYear() +
+      "-" +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(now.getDate()).padStart(2, "0");
+
+    const currentTime =
+      String(now.getHours()).padStart(2, "0") +
+      ":" +
+      String(now.getMinutes()).padStart(2, "0");
+
+    // Disable past dates
+    dateInput.setAttribute("min", today);
+
+    function updateTimeLimit() {
+      if (dateInput.value === today) {
+        timeInput.setAttribute("min", currentTime);
+
+        if (timeInput.value && timeInput.value < currentTime) {
+          timeInput.value = currentTime;
+        }
+      } else {
+        timeInput.removeAttribute("min");
+      }
+    }
+
+    updateTimeLimit();
+
+    dateInput.onchange = updateTimeLimit;
 
     document.getElementById("editEventForm").action = `/edit-event/${eventId}/`;
-
     document.getElementById("editEventModal").style.display = "flex";
   }
 
@@ -557,6 +599,36 @@
         ? ""
         : "none";
     });
+  }
+
+  function confirmEditEvent() {
+    const dateInput = document.getElementById("editEventDate");
+    const timeInput = document.getElementById("editStartTime");
+
+    if (!dateInput.value || !timeInput.value) {
+      alert("Please complete the event date and start time.");
+      return false;
+    }
+
+    const selectedDateTime = new Date(
+      dateInput.value + "T" + timeInput.value + ":00",
+    );
+
+    const now = new Date();
+
+    selectedDateTime.setSeconds(0, 0);
+    now.setSeconds(0, 0);
+
+    if (selectedDateTime < now) {
+      alert(
+        "Invalid schedule. You cannot set the event date or time in the past.",
+      );
+      return false;
+    }
+
+    return confirm(
+      "Are you sure you want to save these changes? If the event is scheduled for a later time, it will be moved back to Pending.",
+    );
   }
 </script>
 

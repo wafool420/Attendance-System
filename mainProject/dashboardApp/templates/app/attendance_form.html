@@ -2,15 +2,107 @@
 <html>
   <head>
     <title>Attendance Form</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+
     <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Segoe UI", sans-serif;
+      }
+
+      body {
+        background: #f5f6fa;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      .attendance-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 16px;
+      }
+
+      .attendance-card {
+        width: 100%;
+        max-width: 560px;
+        background: #fff;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      .attendance-header {
+        padding: 26px 28px;
+        background: #0f3d2e;
+        color: white;
+      }
+
+      .attendance-header h3 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 26px;
+        word-break: break-word;
+      }
+
+      .attendance-header p {
+        margin: 6px 0 0;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 14px;
+      }
+
+      .attendance-body {
+        padding: 26px 28px;
+      }
+
+      .captcha-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        margin-bottom: 22px;
+        overflow: hidden;
+      }
+
+      .captcha-card-body {
+        padding: 20px;
+      }
+
+      .captcha-title {
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .captcha-subtitle {
+        color: #6c757d;
+        font-size: 14px;
+        margin-bottom: 18px;
+      }
+
+      .captcha-question {
+        margin-bottom: 24px;
+      }
+
+      .captcha-question:last-child {
+        margin-bottom: 0;
+      }
+
+      .captcha-question label.question-label {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 10px;
+        display: block;
+      }
+
       .captcha-option {
         border: 1px solid #dcdcdc;
-        border-radius: 10px;
-        padding: 10px 12px;
+        border-radius: 12px;
+        padding: 11px 12px;
         margin-bottom: 10px;
         display: flex;
         align-items: center;
@@ -47,146 +139,270 @@
       }
 
       .captcha-choice-text {
-        font-size: 16px;
+        font-size: 15px;
+        word-break: break-word;
+      }
+
+      form p {
+        margin-bottom: 16px;
+      }
+
+      form p label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #222;
+      }
+
+      form p input,
+      form p select {
+        width: 100%;
+        padding: 11px 13px;
+        border: 1px solid #dcdcdc;
+        border-radius: 10px;
+        font-size: 15px;
+      }
+
+      form p input:focus,
+      form p select:focus {
+        outline: none;
+        border-color: #0f3d2e;
+        box-shadow: 0 0 0 3px rgba(15, 61, 46, 0.12);
+      }
+
+      input[type="file"] {
+        padding: 9px !important;
+      }
+
+      .submit-btn {
+        padding: 12px;
+        border-radius: 12px;
+        font-weight: 700;
+        margin-top: 6px;
+      }
+
+      .alert {
+        border-radius: 12px;
+        font-size: 14px;
+      }
+
+      @media (max-width: 480px) {
+        .attendance-wrapper {
+          align-items: flex-start;
+          padding: 18px 12px;
+        }
+
+        .attendance-card {
+          border-radius: 18px;
+        }
+
+        .attendance-header {
+          padding: 22px 20px;
+        }
+
+        .attendance-header h3 {
+          font-size: 23px;
+        }
+
+        .attendance-header p {
+          font-size: 13px;
+        }
+
+        .attendance-body {
+          padding: 20px;
+        }
+
+        .captcha-card-body {
+          padding: 16px;
+        }
+
+        .captcha-title {
+          font-size: 18px;
+        }
+
+        .captcha-subtitle {
+          font-size: 13px;
+        }
+
+        .captcha-question {
+          margin-bottom: 22px;
+        }
+
+        .captcha-question label.question-label {
+          font-size: 15px;
+        }
+
+        .captcha-option {
+          padding: 10px;
+          border-radius: 11px;
+        }
+
+        .captcha-letter {
+          width: 26px;
+          height: 26px;
+          font-size: 13px;
+        }
+
+        .captcha-choice-text {
+          font-size: 14px;
+        }
+
+        form p {
+          margin-bottom: 14px;
+        }
+
+        form p label {
+          font-size: 14px;
+        }
+
+        form p input,
+        form p select {
+          padding: 10px 12px;
+          font-size: 14px;
+        }
+
+        .submit-btn {
+          padding: 12px;
+          font-size: 15px;
+        }
       }
     </style>
   </head>
 
-  <body class="bg-light">
-    <div class="container mt-5">
-      <div class="card p-4 mx-auto" style="max-width: 500px">
-        <h3>{{ event.title }}</h3>
-        <p class="text-muted">Attendance {{ mode|title }}</p>
-
-        {% if messages %} {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} mb-3">{{ message }}</div>
-        {% endfor %} {% endif %} {% if form.errors %}
-        <div class="alert alert-danger">
-          Please complete all required fields, including the attendance photo.
+  <body>
+    <div class="attendance-wrapper">
+      <div class="attendance-card">
+        <div class="attendance-header">
+          <h3>{{ event.title }}</h3>
+          <p>Attendance {{ mode|title }}</p>
         </div>
-        {% endif %}
 
-        <form method="POST" enctype="multipart/form-data">
-          {% csrf_token %} {% if event.captcha_enabled %}
-          <div class="card border-0 shadow-sm rounded-4 mb-3">
-            <div class="card-body">
-              <h5 class="fw-bold mb-3">Captcha Quiz</h5>
-              <p class="text-muted small">
-                Answer these event questions before submitting your attendance.
-              </p>
+        <div class="attendance-body">
+          {% if messages %} {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} mb-3">{{ message }}</div>
+          {% endfor %} {% endif %} {% if form.errors %}
+          <div class="alert alert-danger">
+            Please complete all required fields, including the attendance photo.
+          </div>
+          {% endif %}
 
-              <div class="mb-4">
-                <label class="form-label fw-semibold fs-5"
-                  >{{ event.captcha_q1 }}</label
-                >
+          <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %} {% if event.captcha_enabled %}
+            <div class="captcha-card">
+              <div class="captcha-card-body">
+                <h5 class="captcha-title">Captcha Quiz</h5>
+                <p class="captcha-subtitle">
+                  Answer these event questions before submitting your
+                  attendance.
+                </p>
 
-                <label class="captcha-option">
-                  <input
-                    type="radio"
-                    name="captcha_answer_1"
-                    value="A"
-                    required
-                  />
-                  <span class="captcha-letter">A</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q1_a }}</span
-                  >
-                </label>
+                <div class="captcha-question">
+                  <label class="question-label">{{ event.captcha_q1 }}</label>
 
-                <label class="captcha-option">
-                  <input type="radio" name="captcha_answer_1" value="B" />
-                  <span class="captcha-letter">B</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q1_b }}</span
-                  >
-                </label>
+                  <label class="captcha-option">
+                    <input
+                      type="radio"
+                      name="captcha_answer_1"
+                      value="A"
+                      required
+                    />
+                    <span class="captcha-letter">A</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q1_a }}
+                    </span>
+                  </label>
 
-                <label class="captcha-option">
-                  <input type="radio" name="captcha_answer_1" value="C" />
-                  <span class="captcha-letter">C</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q1_c }}</span
-                  >
-                </label>
-              </div>
+                  <label class="captcha-option">
+                    <input type="radio" name="captcha_answer_1" value="B" />
+                    <span class="captcha-letter">B</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q1_b }}
+                    </span>
+                  </label>
 
-              <div class="mb-4">
-                <label class="form-label fw-semibold fs-5"
-                  >{{ event.captcha_q2 }}</label
-                >
+                  <label class="captcha-option">
+                    <input type="radio" name="captcha_answer_1" value="C" />
+                    <span class="captcha-letter">C</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q1_c }}
+                    </span>
+                  </label>
+                </div>
 
-                <label class="captcha-option">
-                  <input
-                    type="radio"
-                    name="captcha_answer_2"
-                    value="A"
-                    required
-                  />
-                  <span class="captcha-letter">A</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q2_a }}</span
-                  >
-                </label>
+                <div class="captcha-question">
+                  <label class="question-label">{{ event.captcha_q2 }}</label>
 
-                <label class="captcha-option">
-                  <input type="radio" name="captcha_answer_2" value="B" />
-                  <span class="captcha-letter">B</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q2_b }}</span
-                  >
-                </label>
+                  <label class="captcha-option">
+                    <input
+                      type="radio"
+                      name="captcha_answer_2"
+                      value="A"
+                      required
+                    />
+                    <span class="captcha-letter">A</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q2_a }}
+                    </span>
+                  </label>
 
-                <label class="captcha-option">
-                  <input type="radio" name="captcha_answer_2" value="C" />
-                  <span class="captcha-letter">C</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q2_c }}</span
-                  >
-                </label>
-              </div>
+                  <label class="captcha-option">
+                    <input type="radio" name="captcha_answer_2" value="B" />
+                    <span class="captcha-letter">B</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q2_b }}
+                    </span>
+                  </label>
 
-              <div class="mb-3">
-                <label class="form-label fw-semibold fs-5"
-                  >{{ event.captcha_q3 }}</label
-                >
+                  <label class="captcha-option">
+                    <input type="radio" name="captcha_answer_2" value="C" />
+                    <span class="captcha-letter">C</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q2_c }}
+                    </span>
+                  </label>
+                </div>
 
-                <label class="captcha-option">
-                  <input
-                    type="radio"
-                    name="captcha_answer_3"
-                    value="A"
-                    required
-                  />
-                  <span class="captcha-letter">A</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q3_a }}</span
-                  >
-                </label>
+                <div class="captcha-question">
+                  <label class="question-label">{{ event.captcha_q3 }}</label>
 
-                <label class="captcha-option">
-                  <input type="radio" name="captcha_answer_3" value="B" />
-                  <span class="captcha-letter">B</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q3_b }}</span
-                  >
-                </label>
+                  <label class="captcha-option">
+                    <input
+                      type="radio"
+                      name="captcha_answer_3"
+                      value="A"
+                      required
+                    />
+                    <span class="captcha-letter">A</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q3_a }}
+                    </span>
+                  </label>
 
-                <label class="captcha-option">
-                  <input type="radio" name="captcha_answer_3" value="C" />
-                  <span class="captcha-letter">C</span>
-                  <span class="captcha-choice-text"
-                    >{{ event.captcha_q3_c }}</span
-                  >
-                </label>
+                  <label class="captcha-option">
+                    <input type="radio" name="captcha_answer_3" value="B" />
+                    <span class="captcha-letter">B</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q3_b }}
+                    </span>
+                  </label>
+
+                  <label class="captcha-option">
+                    <input type="radio" name="captcha_answer_3" value="C" />
+                    <span class="captcha-letter">C</span>
+                    <span class="captcha-choice-text">
+                      {{ event.captcha_q3_c }}
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
-          {% endif %} {{ form.as_p }}
+            {% endif %} {{ form.as_p }}
 
-          <button type="submit" class="btn btn-success w-100">
-            Submit Attendance
-          </button>
-        </form>
+            <button type="submit" class="btn btn-success w-100 submit-btn">
+              Submit Attendance
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </body>
